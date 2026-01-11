@@ -4,218 +4,387 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FairWindSK Settings</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="header-content">
-                <h1 class="title">FairWindSK</h1>
-                <p class="subtitle">Navigation System Configuration</p>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <nav class="navbar navbar-dark bg-dark mb-4">
+                    <span class="navbar-brand mb-0 h1">
+                        <i class="fas fa-cog"></i> FairWindSK Settings
+                    </span>
+                    <div class="navbar-text" id="userInfo">
+                        <span id="userName" class="mr-2"></span>
+                        <span id="userLevel" class="badge badge-secondary"></span>
+                    </div>
+                </nav>
             </div>
-            <div class="header-actions">
-                <button id="resetBtn" class="btn btn-secondary">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 8a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M2 8V4M2 8h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Reset to Defaults
-                </button>
-                <button id="saveBtn" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M13 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h7l4 4v7a1 1 0 0 1-1 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M11 14v-5H5v5M5 2v4h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Save Configuration
-                </button>
-            </div>
-        </header>
+        </div>
 
-        <nav class="tabs">
-            <button class="tab active" data-tab="main">Main</button>
-            <button class="tab" data-tab="connection">Connection</button>
-            <button class="tab" data-tab="signalk">Signal K Paths</button>
-            <button class="tab" data-tab="apps">Applications</button>
-        </nav>
+        <div class="row">
+            <div class="col-12">
+                <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="main-tab-btn" data-toggle="tab" href="#main-tab" role="tab">
+                            <i class="fas fa-home"></i> Main
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signalk-tab-btn" data-toggle="tab" href="#signalk-tab" role="tab">
+                            <i class="fas fa-route"></i> Signal K Paths
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="apps-tab-btn" data-toggle="tab" href="#apps-tab" role="tab">
+                            <i class="fas fa-th"></i> Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="bottombar-tab-btn" data-toggle="tab" href="#bottombar-tab" role="tab">
+                            <i class="fas fa-bars"></i> Bottom Bar
+                        </a>
+                    </li>
+                </ul>
 
-        <main class="content">
-            <!-- Main Tab -->
-            <div id="main-tab" class="tab-content active">
-                <section class="section">
-                    <h2 class="section-title">Window Configuration</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="windowMode">Display Mode</label>
-                            <select id="windowMode" class="input">
-                                <option value="windowed">Windowed</option>
-                                <option value="centered">Centered</option>
-                                <option value="maximized">Maximized</option>
-                                <option value="fullscreen">Full Screen</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="windowWidth">Width (px)</label>
-                            <input type="number" id="windowWidth" class="input" min="800" max="3840">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="windowHeight">Height (px)</label>
-                            <input type="number" id="windowHeight" class="input" min="600" max="2160">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="windowLeft">Left Position (px)</label>
-                            <input type="number" id="windowLeft" class="input" min="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="windowTop">Top Position (px)</label>
-                            <input type="number" id="windowTop" class="input" min="0">
+                <div class="tab-content" id="settingsTabContent">
+                    <!-- Main Tab -->
+                    <div class="tab-pane fade show active" id="main-tab" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-window-maximize"></i> Window Configuration</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="windowMode">Display Mode</label>
+                                            <select id="windowMode" class="form-control">
+                                                <option value="windowed">Windowed</option>
+                                                <option value="centered">Centered</option>
+                                                <option value="maximized">Maximized</option>
+                                                <option value="fullscreen">Full Screen</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="windowWidth">Width (px)</label>
+                                            <input type="number" id="windowWidth" class="form-control" min="800" max="3840">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="windowHeight">Height (px)</label>
+                                            <input type="number" id="windowHeight" class="form-control" min="600" max="2160">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="windowLeft">Left Position (px)</label>
+                                            <input type="number" id="windowLeft" class="form-control" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="windowTop">Top Position (px)</label>
+                                            <input type="number" id="windowTop" class="form-control" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>&nbsp;</label>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="virtualKeyboard">
+                                                <label class="custom-control-label" for="virtualKeyboard">
+                                                    Enable Virtual Keyboard
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="virtualKeyboard">
-                                <span>Enable Virtual Keyboard</span>
-                            </label>
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-ruler"></i> Units of Measurement</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitAirPressure">Air Pressure</label>
+                                            <select id="unitAirPressure" class="form-control">
+                                                <option value="hPa">HectoPascal (hPa)</option>
+                                                <option value="mb">Millibar (mb)</option>
+                                                <option value="psi">PSI</option>
+                                                <option value="mmHg">mmHg</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitAirTemperature">Air Temperature</label>
+                                            <select id="unitAirTemperature" class="form-control">
+                                                <option value="C">Celsius (°C)</option>
+                                                <option value="F">Fahrenheit (°F)</option>
+                                                <option value="K">Kelvin (°K)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitWaterTemperature">Water Temperature</label>
+                                            <select id="unitWaterTemperature" class="form-control">
+                                                <option value="C">Celsius (°C)</option>
+                                                <option value="F">Fahrenheit (°F)</option>
+                                                <option value="K">Kelvin (°K)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitDepth">Depth</label>
+                                            <select id="unitDepth" class="form-control">
+                                                <option value="mt">Meters (m)</option>
+                                                <option value="ft">Feet (ft)</option>
+                                                <option value="ftm">Fathoms (ftm)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitDistance">Distance</label>
+                                            <select id="unitDistance" class="form-control">
+                                                <option value="nm">Nautical Miles (nm)</option>
+                                                <option value="km">Kilometers (km)</option>
+                                                <option value="ml">Miles (ml)</option>
+                                                <option value="m">Meters (m)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitVesselSpeed">Vessel Speed</label>
+                                            <select id="unitVesselSpeed" class="form-control">
+                                                <option value="kn">Knots (kn)</option>
+                                                <option value="kmh">km/h</option>
+                                                <option value="mph">mph</option>
+                                                <option value="ms">m/s</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitWindSpeed">Wind Speed</label>
+                                            <select id="unitWindSpeed" class="form-control">
+                                                <option value="kn">Knots (kn)</option>
+                                                <option value="kmh">km/h</option>
+                                                <option value="mph">mph</option>
+                                                <option value="ms">m/s</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="unitRange">Range</label>
+                                            <select id="unitRange" class="form-control">
+                                                <option value="rm">Meters (m)</option>
+                                                <option value="rft">Feet (ft)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </section>
 
-                <section class="section">
-                    <h2 class="section-title">Units of Measurement</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="unitAirPressure">Air Pressure</label>
-                            <select id="unitAirPressure" class="input">
-                                <option value="hPa">HectoPascal (hPa)</option>
-                                <option value="mb">Millibar (mb)</option>
-                                <option value="psi">Pound per square inch (psi)</option>
-                                <option value="mmHg">Millimetre of Mercury (mmHg)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitAirTemperature">Air Temperature</label>
-                            <select id="unitAirTemperature" class="input">
-                                <option value="C">Celsius (°C)</option>
-                                <option value="F">Fahrenheit (°F)</option>
-                                <option value="K">Kelvin (°K)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitWaterTemperature">Water Temperature</label>
-                            <select id="unitWaterTemperature" class="input">
-                                <option value="C">Celsius (°C)</option>
-                                <option value="F">Fahrenheit (°F)</option>
-                                <option value="K">Kelvin (°K)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitDepth">Depth</label>
-                            <select id="unitDepth" class="input">
-                                <option value="mt">Meters (m)</option>
-                                <option value="ft">Feet (ft)</option>
-                                <option value="ftm">Fathoms (ftm)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitDistance">Distance</label>
-                            <select id="unitDistance" class="input">
-                                <option value="nm">Nautical Miles (nm)</option>
-                                <option value="km">Kilometers (km)</option>
-                                <option value="ml">Miles (ml)</option>
-                                <option value="m">Meters (m)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitVesselSpeed">Vessel Speed</label>
-                            <select id="unitVesselSpeed" class="input">
-                                <option value="kn">Knots (kn)</option>
-                                <option value="kmh">Kilometers per Hour (km/h)</option>
-                                <option value="mph">Miles per Hour (mph)</option>
-                                <option value="ms">Meters per Second (m/s)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitWindSpeed">Wind Speed</label>
-                            <select id="unitWindSpeed" class="input">
-                                <option value="kn">Knots (kn)</option>
-                                <option value="kmh">Kilometers per Hour (km/h)</option>
-                                <option value="mph">Miles per Hour (mph)</option>
-                                <option value="ms">Meters per Second (m/s)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="unitRange">Range</label>
-                            <select id="unitRange" class="input">
-                                <option value="rm">Meters (m)</option>
-                                <option value="rft">Feet (ft)</option>
-                            </select>
+                    <!-- Signal K Paths Tab -->
+                    <div class="tab-pane fade" id="signalk-tab" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-route"></i> Signal K Data Paths</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Configure which Signal K paths are used for different data types</p>
+                                <div id="signalkPaths" class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th width="30%">Description</th>
+                                                <th>Signal K Path</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="signalkPathsBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </section>
-            </div>
 
-            <!-- Connection Tab -->
-            <div id="connection-tab" class="tab-content">
-                <section class="section">
-                    <h2 class="section-title">Signal K Server Connection</h2>
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="serverUrl">Server URL</label>
-                            <input type="text" id="serverUrl" class="input" placeholder="http://localhost:3000">
-                            <small class="help-text">Enter the Signal K server URL or leave empty for auto-detection</small>
+                    <!-- Applications Tab -->
+                    <div class="tab-pane fade" id="apps-tab" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-th"></i> Applications</h5>
+                                <div>
+                                    <button id="syncAppsBtn" class="btn btn-sm btn-info mr-2">
+                                        <i class="fas fa-sync"></i> Sync from Signal K
+                                    </button>
+                                    <button id="addManualAppBtn" class="btn btn-sm btn-success">
+                                        <i class="fas fa-plus"></i> Add Manual App
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="appGroupsContainer"></div>
+                            </div>
                         </div>
                     </div>
-                </section>
 
-                <section class="section">
-                    <h2 class="section-title">Authentication</h2>
-                    <div id="authStatus" class="auth-status">
-                        <div class="status-indicator"></div>
-                        <span>Not connected</span>
+                    <!-- Bottom Bar Tab -->
+                    <div class="tab-pane fade" id="bottombar-tab" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-bars"></i> Bottom Bar Applications</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Select up to 4 applications to display in the bottom bar</p>
+                                <div class="row" id="bottomBarSlots">
+                                    <div class="col-md-3 mb-3">
+                                        <label>Slot 1</label>
+                                        <select id="bottomBar1" class="form-control"></select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label>Slot 2</label>
+                                        <select id="bottomBar2" class="form-control"></select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label>Slot 3</label>
+                                        <select id="bottomBar3" class="form-control"></select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label>Slot 4</label>
+                                        <select id="bottomBar4" class="form-control"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <p class="help-text">Authentication is managed through Signal K server settings</p>
-                </section>
-            </div>
+                </div>
 
-            <!-- Signal K Paths Tab -->
-            <div id="signalk-tab" class="tab-content">
-                <section class="section">
-                    <h2 class="section-title">Signal K Data Paths</h2>
-                    <p class="help-text">Configure which Signal K paths are used for different data types</p>
-                    <div id="signalkPaths" class="paths-grid"></div>
-                </section>
-            </div>
-
-            <!-- Applications Tab -->
-            <div id="apps-tab" class="tab-content">
-                <section class="section">
-                    <div class="section-header">
-                        <h2 class="section-title">Installed Applications</h2>
-                        <button id="addAppBtn" class="btn btn-secondary btn-sm">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            Add Application
-                        </button>
+                <!-- Action Buttons -->
+                <div class="row mt-4 mb-4">
+                    <div class="col-12">
+                        <div class="float-right">
+                            <button id="resetBtn" class="btn btn-warning mr-2">
+                                <i class="fas fa-undo"></i> Reset to Defaults
+                            </button>
+                            <button id="saveBtn" class="btn btn-primary" disabled>
+                                <i class="fas fa-save"></i> Save Configuration
+                            </button>
+                        </div>
                     </div>
-                    <div id="appsList" class="apps-list"></div>
-                </section>
+                </div>
             </div>
-        </main>
-
-        <div id="notification" class="notification"></div>
+        </div>
     </div>
 
+    <!-- Add Manual App Modal -->
+    <div class="modal fade" id="addManualAppModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus"></i> Add Manual Application</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="manualAppForm">
+                        <div class="form-group">
+                            <label for="manualAppName">Name/ID</label>
+                            <input type="text" class="form-control" id="manualAppName" required
+                                   placeholder="my-custom-app">
+                            <small class="form-text text-muted">Unique identifier for the application</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualAppDisplayName">Display Name</label>
+                            <input type="text" class="form-control" id="manualAppDisplayName" required
+                                   placeholder="My Custom App">
+                        </div>
+                        <div class="form-group">
+                            <label for="manualAppUrl">URL</label>
+                            <input type="url" class="form-control" id="manualAppUrl" required
+                                   placeholder="https://example.com/app">
+                            <small class="form-text text-muted">Full URL or relative path</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualAppIcon">Icon URL</label>
+                            <input type="text" class="form-control" id="manualAppIcon"
+                                   placeholder="https://example.com/icon.png">
+                            <small class="form-text text-muted">Leave empty to use default icon</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualAppDescription">Description</label>
+                            <textarea class="form-control" id="manualAppDescription" rows="2"
+                                      placeholder="Brief description of the application"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualAppGroup">Group</label>
+                            <select class="form-control" id="manualAppGroup">
+                                <option value="navigation">Navigation</option>
+                                <option value="instruments">Instruments</option>
+                                <option value="utilities">Utilities</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveManualApp">
+                        <i class="fas fa-save"></i> Add Application
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container">
+        <div id="notification" class="toast" role="alert" data-delay="4000">
+            <div class="toast-header">
+                <strong class="mr-auto" id="toastTitle">Notification</strong>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="toast-body" id="toastBody"></div>
+        </div>
+    </div>
+
+    <!-- Admin Check Overlay -->
+    <div id="adminOverlay" class="admin-overlay" style="display: none;">
+        <div class="alert alert-warning text-center">
+            <i class="fas fa-lock fa-3x mb-3"></i>
+            <h4>Administrator Access Required</h4>
+            <p>You must be logged in as an administrator to modify settings.</p>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -67,23 +67,33 @@ module.exports = function (app) {
         windowTop: 20,
         windowLeft: 0
       },
-      apps: [
+      apps: [],
+      appGroups: [
         {
-          description: 'Signal K Server',
-          fairwind: {
-            active: true,
-            order: 1000
-          },
-          name: 'http:///',
-          signalk: {
-            appIcon: 'file://icons/signalkserver_icon.png',
-            displayName: 'Signal K'
-          }
+          id: 'navigation',
+          name: 'Navigation',
+          order: 1,
+          apps: []
+        },
+        {
+          id: 'instruments',
+          name: 'Instruments',
+          order: 2,
+          apps: []
+        },
+        {
+          id: 'utilities',
+          name: 'Utilities',
+          order: 3,
+          apps: []
+        },
+        {
+          id: 'other',
+          name: 'Other',
+          order: 999,
+          apps: []
         }
       ],
-      connection: {
-        server: ''
-      },
       signalk: {
         btw: 'navigation.course.calcValues.bearingTrue',
         cog: 'navigation.courseOverGroundTrue',
@@ -147,7 +157,8 @@ module.exports = function (app) {
         autopilot: '@signalk/signalk-autopilot',
         anchor: 'signalk-anchoralarm-plugin',
         mydata: 'signalk-mydata-plugin'
-      }
+      },
+      bottomBar: ['', '', '', '']
     };
   }
 

@@ -5,27 +5,15 @@
       <stop offset="100%" style="stop-color:#89cff0;stop-opacity:1" />
     </linearGradient>
   </defs>
-  
-  <!-- Background -->
   <rect width="256" height="256" rx="32" fill="#0a1929"/>
-  
-  <!-- Compass Rose -->
   <circle cx="128" cy="128" r="80" fill="none" stroke="url(#oceanGrad)" stroke-width="4"/>
   <circle cx="128" cy="128" r="60" fill="none" stroke="url(#oceanGrad)" stroke-width="2"/>
-  
-  <!-- North Arrow -->
   <path d="M 128 48 L 138 88 L 128 78 L 118 88 Z" fill="#89cff0"/>
-  
-  <!-- Compass Points -->
   <circle cx="128" cy="48" r="4" fill="#5fa8d3"/>
   <circle cx="208" cy="128" r="4" fill="#5fa8d3"/>
   <circle cx="128" cy="208" r="4" fill="#5fa8d3"/>
   <circle cx="48" cy="128" r="4" fill="#5fa8d3"/>
-  
-  <!-- Center -->
   <circle cx="128" cy="128" r="8" fill="#f77f00"/>
-  
-  <!-- Settings Icon -->
   <g transform="translate(128, 180)">
     <circle r="16" fill="none" stroke="#89cff0" stroke-width="2"/>
     <circle r="6" fill="#89cff0"/>

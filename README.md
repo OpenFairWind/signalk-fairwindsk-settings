@@ -1,253 +1,291 @@
-# FairWindSK Settings - Signal K Plugin & WebApp
+# FairWindSK Settings v2.0 - Signal K Plugin & WebApp
 
-A comprehensive Signal K plugin and web application for managing FairWindSK navigation system settings. This replaces the original C++ Qt-based settings UI with a modern, responsive web interface.
+A Signal K plugin and web application for managing FairWindSK navigation system settings with **automatic app population from Signal K Apps API**, **grouping**, and **drag-and-drop sorting**.
+
+## 🆕 What's New in v2.0
+
+### Signal K Apps API Integration
+- **Automatic app discovery** from `/appstore/list` endpoint
+- One-click sync to populate apps from Signal K
+- Automatic categorization into groups
+- Version tracking for Signal K apps
+
+### App Grouping & Organization
+- Apps organized into **4 default groups**:
+  - 🗺️ Navigation (charts, plotters, routes)
+  - 📊 Instruments (gauges, displays, panels)
+  - 🔧 Utilities (anchors, autopilot, alarms)
+  - 📦 Other (everything else)
+- **Drag-and-drop** apps between groups
+- **Sortable** within each group
+- Visual group headers with app counts
+
+### Manual App Creation
+- Add custom applications with URLs
+- Define custom icons
+- Full control over app metadata
+- Support for external web apps
+
+### Source Tracking
+- **Signal K apps** badged as "signalk"
+- **Manual apps** badged as "manual"
+- Easy identification of app source
 
 ## Features
 
-- **Modern Web Interface**: Beautiful, nautical-themed responsive design
-- **RESTful API**: Complete REST API for configuration management
-- **Real-time Updates**: Live configuration editing and validation
-- **Four Configuration Sections**:
-  - Main Settings (window configuration, units of measurement)
-  - Connection Settings (Signal K server configuration)
-  - Signal K Paths (data path mapping)
-  - Applications (installed apps management)
+- ✅ **Bootstrap 4 UI** - Clean, professional interface
+- ✅ **Admin-Only Editing** - Security with user level checking
+- ✅ **RESTful API** - Complete configuration management
+- ✅ **Auto-Discovery** - Sync apps from Signal K
+- ✅ **Grouping** - Organize apps by category
+- ✅ **Drag-and-Drop** - jQuery UI sortable
+- ✅ **Manual Apps** - Add custom applications
+- ✅ **Bottom Bar** - 4 quick-access slots
 
 ## Installation
 
-### Via NPM (Recommended)
 ```bash
-cd ~/.signalk
-npm install signalk-fairwindsk-settings
-```
+# Extract ZIP
+unzip signalk-fairwindsk-settings.zip
 
-### Manual Installation
-1. Clone or download this repository
-2. Copy to your Signal K node modules directory:
-```bash
+# Install to Signal K
 cp -r signalk-fairwindsk-settings ~/.signalk/node_modules/
+
+# Restart Signal K
+sudo systemctl restart signalk
 ```
 
-3. Restart Signal K server
+## Quick Start Guide
 
-## Usage
-
-### Access the WebApp
-
-1. Open Signal K server in your browser (default: http://localhost:3000)
+### 1. Access the WebApp
+1. Log in to Signal K as **admin**
 2. Navigate to **Webapps** → **FairWindSK Settings**
-3. Configure your settings across the four tabs
-4. Click **Save Configuration** to persist changes
 
-### REST API Endpoints
+### 2. Sync Apps from Signal K
+1. Go to **Applications** tab
+2. Click **"Sync from Signal K"** button
+3. Apps will be automatically categorized and added
+4. Click **Save** to persist
 
-The plugin exposes the following REST API endpoints:
+### 3. Organize Apps
+- **Drag apps** between groups to recategorize
+- **Drag within groups** to reorder
+- **Check "Active"** to enable apps
+- **Click trash icon** to remove apps
 
-#### Get Configuration
-```http
-GET /plugins/fairwindsk-settings/config
-```
-Returns the complete FairWindSK configuration as JSON.
+### 4. Add Manual Apps
+1. Click **"Add Manual App"**
+2. Fill in the form:
+   - **Name/ID**: Unique identifier
+   - **Display Name**: Human-readable name
+   - **URL**: Application URL
+   - **Icon URL**: Optional icon path
+   - **Description**: Optional description
+   - **Group**: Select category
+3. Click **"Add Application"**
 
-#### Update Configuration (Full Replace)
-```http
-PUT /plugins/fairwindsk-settings/config
-Content-Type: application/json
-
-{
-  "main": { ... },
-  "connection": { ... },
-  "signalk": { ... },
-  "apps": [ ... ],
-  "units": { ... }
-}
-```
-
-#### Partial Update Configuration
-```http
-PATCH /plugins/fairwindsk-settings/config
-Content-Type: application/json
-
-{
-  "main": {
-    "windowWidth": 1920
-  }
-}
-```
-
-#### Reset to Defaults
-```http
-POST /plugins/fairwindsk-settings/config/reset
-```
-
-### Configuration File
-
-The configuration is stored in:
-```
-~/.signalk/fairwindsk.json
-```
+### 5. Configure Bottom Bar
+1. Go to **Bottom Bar** tab
+2. Select up to 4 apps for quick access
+3. Only active apps appear in dropdown
+4. Click **Save**
 
 ## Configuration Structure
 
 ```json
 {
-  "main": {
-    "virtualKeyboard": false,
-    "windowMode": "centered",
-    "windowWidth": 1024,
-    "windowHeight": 600,
-    "windowTop": 20,
-    "windowLeft": 0
-  },
-  "connection": {
-    "server": "http://localhost:3000"
-  },
-  "signalk": {
-    "btw": "navigation.course.calcValues.bearingTrue",
-    "cog": "navigation.courseOverGroundTrue",
-    ...
-  },
   "apps": [
     {
-      "name": "app-name",
-      "description": "App description",
+      "name": "@signalk/freeboard-sk",
+      "description": "Chart plotter",
+      "url": "/signalk/@signalk/freeboard-sk",
       "fairwind": {
         "active": true,
-        "order": 100
+        "order": 100,
+        "group": "navigation",
+        "source": "signalk"
       },
       "signalk": {
-        "displayName": "Display Name",
-        "appIcon": "path/to/icon.png"
+        "displayName": "Freeboard-SK",
+        "appIcon": "/path/to/icon.png",
+        "version": "2.0.0"
       }
     }
   ],
-  "units": {
-    "airPressure": "hPa",
-    "airTemperature": "C",
-    "depth": "mt",
-    ...
-  }
+  "appGroups": [
+    {
+      "id": "navigation",
+      "name": "Navigation",
+      "order": 1,
+      "apps": []
+    }
+  ],
+  "bottomBar": ["app1", "app2", "app3", "app4"]
 }
 ```
 
-## Window Modes
+## App Group System
 
-- **Windowed**: Custom position and size
-- **Centered**: Centered with custom size
-- **Maximized**: Full screen without decorations
-- **Full Screen**: Full screen mode
+### Default Groups
 
-## Supported Units
+| Group | ID | Purpose | Auto-categorization Keywords |
+|-------|-----|---------|------------------------------|
+| 🗺️ Navigation | `navigation` | Charts, routes, maps | chart, map, route, navigation, freeboard, plotter |
+| 📊 Instruments | `instruments` | Gauges, displays | instrument, gauge, display, panel, kip |
+| 🔧 Utilities | `utilities` | Tools, alarms | anchor, alarm, autopilot, mydata, windlass |
+| 📦 Other | `other` | Miscellaneous | Everything else |
 
-### Temperature
-- Celsius (C)
-- Fahrenheit (F)
-- Kelvin (K)
+### Customizing Groups
 
-### Pressure
-- HectoPascal (hPa)
-- Millibar (mb)
-- PSI (psi)
-- mmHg (mmHg)
+Apps are automatically categorized based on name and description keywords. You can:
+- **Drag apps** between groups to manually recategorize
+- Groups are saved with app assignment
 
-### Speed
-- Knots (kn)
-- km/h (kmh)
-- mph (mph)
-- m/s (ms)
+## Signal K Apps API
 
-### Distance
-- Nautical Miles (nm)
-- Kilometers (km)
-- Miles (ml)
-- Meters (m)
+The plugin uses these Signal K endpoints:
 
-### Depth
-- Meters (mt)
-- Feet (ft)
-- Fathoms (ftm)
-
-## Development
-
-### Project Structure
-```
-signalk-fairwindsk-settings/
-├── index.js              # Plugin backend
-├── package.json          # Package configuration
-├── public/               # WebApp frontend
-│   ├── index.html       # Main HTML
-│   ├── styles.css       # Styles
-│   ├── app.js           # Application logic
-│   └── icon.png         # App icon
-└── README.md            # This file
+### `/appstore/list`
+Returns list of installed Signal K applications:
+```json
+[
+  {
+    "name": "@signalk/freeboard-sk",
+    "displayName": "Freeboard-SK",
+    "description": "Chart plotter",
+    "icon": "/path/to/icon.png",
+    "version": "2.0.0"
+  }
+]
 ```
 
-### API Integration
+### Sync Behavior
+- **New apps**: Added with `active: false`
+- **Existing apps**: Metadata updated (name, icon, version)
+- **Source tracking**: Signal K apps marked as `source: "signalk"`
+- **Manual apps**: Preserved (marked as `source: "manual"`)
 
-Example using fetch:
+## REST API
 
-```javascript
-// Get current configuration
-const config = await fetch('/plugins/fairwindsk-settings/config')
-  .then(r => r.json());
+### GET `/plugins/fairwindsk-settings/config`
+Returns complete configuration
 
-// Update configuration
-await fetch('/plugins/fairwindsk-settings/config', {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(config)
-});
+### PUT `/plugins/fairwindsk-settings/config`
+Replace entire configuration (admin only)
 
-// Reset to defaults
-await fetch('/plugins/fairwindsk-settings/config/reset', {
-  method: 'POST'
-});
-```
+### PATCH `/plugins/fairwindsk-settings/config`
+Partial update (admin only)
 
-## Migration from C++ UI
+### POST `/plugins/fairwindsk-settings/config/reset`
+Reset to defaults (admin only)
 
-This plugin provides a drop-in replacement for the C++ Qt-based settings interface. The configuration format is compatible, so existing `fairwindsk.json` files will work without modification.
+## Security
 
-### Key Differences
-- Web-based interface accessible from any device
-- RESTful API for programmatic access
-- Modern, responsive design
-- No desktop application required
-- Real-time validation and feedback
+- **Admin-only editing**: Checks `userLevel === "admin"` via `/signalk/v1/auth/validate`
+- **Read-only for guests**: Non-admin users see disabled UI with overlay
+- **User info display**: Navbar shows username and access level
 
 ## Troubleshooting
 
-### Configuration Not Saving
-- Check Signal K server logs for errors
-- Ensure proper write permissions on `~/.signalk/fairwindsk.json`
-- Verify JSON format is valid
+### Apps Not Syncing
+**Issue**: "Sync from Signal K" returns 0 apps
 
-### WebApp Not Loading
-- Restart Signal K server
-- Clear browser cache
-- Check browser console for errors
+**Solutions**:
+1. Verify Signal K apps are installed
+2. Check `/appstore/list` endpoint is accessible
+3. Ensure Signal K server is running
+4. Check browser console for errors
 
-### API Not Responding
-- Ensure plugin is enabled in Signal K server settings
-- Check Signal K server is running
-- Verify correct URL and port
+### Can't Drag Apps
+**Issue**: Drag-and-drop not working
+
+**Solutions**:
+1. Ensure you're logged in as admin
+2. Verify jQuery UI is loaded (check browser console)
+3. Try refreshing the page
+
+### Manual App Won't Add
+**Issue**: "Add Manual App" form validation fails
+
+**Solutions**:
+1. Ensure all required fields are filled
+2. Name/ID must be unique
+3. URL must be valid format
+4. Try different app name
+
+### Bottom Bar Empty
+**Issue**: No apps in bottom bar dropdowns
+
+**Solutions**:
+1. Enable apps in Applications tab first
+2. Only active apps appear in dropdown
+3. Save configuration after enabling apps
+
+## Migration from v1.0
+
+v2.0 is **backward compatible** with v1.0 configurations:
+
+**Automatic Upgrades**:
+- Legacy `apps` array is preserved
+- Missing `group` field defaults to `"other"`
+- Missing `source` field defaults to `"manual"`
+- `appGroups` array is created if missing
+
+**Manual Migration**:
+1. Install v2.0
+2. Click "Sync from Signal K"
+3. Review and reorganize apps
+4. Save configuration
+
+## Development
+
+### Local Testing
+```bash
+cd signalk-fairwindsk-settings
+npm link
+cd ~/.signalk
+npm link signalk-fairwindsk-settings
+systemctl restart signalk
+```
+
+### Debug Mode
+```bash
+DEBUG=signalk-fairwindsk-settings signalk-server
+```
+
+### File Structure
+```
+signalk-fairwindsk-settings/
+├── index.js              # Backend plugin
+├── package.json          # v2.0.0
+├── public/
+│   ├── index.html       # Bootstrap UI with modals
+│   ├── app.js           # Signal K API integration
+│   ├── styles.css       # Drag-and-drop styles
+│   └── icon.svg         # Plugin icon
+└── README.md
+```
 
 ## License
 
-MIT
-
-## Contributing
-
-Contributions are welcome! Please submit pull requests or open issues on the project repository.
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Project Repository]
-- Signal K Slack: #fairwindsk channel
+Apache License 2.0
 
 ## Credits
 
-- Original FairWindSK by the FairWindSK Team
-- Signal K by the Signal K project
-- Nautical-themed UI design inspired by maritime navigation systems
+- **FairWindSK Team** - Original project
+- **Signal K Project** - Platform and Apps API
+- **Bootstrap** - UI framework
+- **jQuery UI** - Drag-and-drop functionality
+- **Font Awesome** - Icons
+
+## Support
+
+- **GitHub Issues**: Bug reports and features
+- **Signal K Forum**: Community support
+- **Documentation**: This README
+
+---
+
+**Version:** 2.0.0  
+**Date:** January 2025  
+**Status:** Production Ready ✅

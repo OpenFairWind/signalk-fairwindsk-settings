@@ -1,18 +1,167 @@
-// FairWindSK Settings WebApp
+// FairWindSK Settings WebApp with Signal K Apps API Integration
 
 class FairWindSKSettings {
     constructor() {
         this.config = null;
+        this.signalKApps = [];
         this.apiBase = '/plugins/fairwindsk-settings';
         this.signalkPathsData = this.getSignalKPathsMetadata();
+        this.isAdmin = false;
+        this.userLevel = null;
         
         this.init();
     }
 
     async init() {
+        await this.checkUserLevel();
         await this.loadConfig();
+        await this.loadSignalKApps();
         this.setupEventListeners();
         this.populateUI();
+        this.updateUIState();
+    }
+
+    // Check user level
+    async checkUserLevel() {
+        try {
+            const response = await fetch('/signalk/v1/auth/validate', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.userLevel = data.userLevel || 'guest';
+                this.isAdmin = this.userLevel === 'admin';
+                
+                // Update UI
+                $('#userName').text(data.username || 'Guest');
+                $('#userLevel').text(this.userLevel.toUpperCase())
+                    .removeClass('badge-secondary badge-success')
+                    .addClass(this.isAdmin ? 'badge-success' : 'badge-secondary');
+            } else {
+                this.userLevel = 'guest';
+                this.isAdmin = false;
+                $('#userName').text('Guest');
+                $('#userLevel').text('GUEST').addClass('badge-secondary');
+            }
+        } catch (error) {
+            console.error('Error checking user level:', error);
+            this.userLevel = 'guest';
+            this.isAdmin = false;
+            $('#userName').text('Guest');
+            $('#userLevel').text('GUEST').addClass('badge-secondary');
+        }
+    }
+
+    // Load apps from Signal K Apps API
+    async loadSignalKApps() {
+        try {
+            const response = await fetch('/appstore/list');
+            if (response.ok) {
+                const data = await response.json();
+                this.signalKApps = data || [];
+                console.log('Loaded Signal K apps:', this.signalKApps.length);
+            }
+        } catch (error) {
+            console.warn('Could not load Signal K apps:', error);
+            this.signalKApps = [];
+        }
+    }
+
+    // Sync apps from Signal K Apps API
+    async syncAppsFromSignalK() {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+
+        await this.loadSignalKApps();
+
+        if (this.signalKApps.length === 0) {
+            this.showNotification('No Signal K apps found', 'warning');
+            return;
+        }
+
+        // Initialize apps array and groups if needed
+        if (!this.config.apps) {
+            this.config.apps = [];
+        }
+        if (!this.config.appGroups) {
+            this.config.appGroups = this.getDefaultGroups();
+        }
+
+        let addedCount = 0;
+        let updatedCount = 0;
+
+        this.signalKApps.forEach(skApp => {
+            const existingApp = this.config.apps.find(app => app.name === skApp.name);
+
+            if (!existingApp) {
+                // Add new app
+                const newApp = {
+                    name: skApp.name,
+                    description: skApp.description || '',
+                    url: `/signalk/${skApp.name}`,
+                    fairwind: {
+                        active: false,
+                        order: this.config.apps.length * 100,
+                        group: this.categorizeApp(skApp.name, skApp.description),
+                        source: 'signalk'
+                    },
+                    signalk: {
+                        displayName: skApp.displayName || skApp.name,
+                        appIcon: skApp.icon || null,
+                        version: skApp.version || null
+                    }
+                };
+                this.config.apps.push(newApp);
+                addedCount++;
+            } else {
+                // Update existing app metadata
+                existingApp.description = skApp.description || existingApp.description;
+                existingApp.signalk.displayName = skApp.displayName || existingApp.signalk.displayName;
+                existingApp.signalk.appIcon = skApp.icon || existingApp.signalk.appIcon;
+                existingApp.signalk.version = skApp.version || existingApp.signalk.version;
+                if (!existingApp.fairwind.source) {
+                    existingApp.fairwind.source = 'signalk';
+                }
+                updatedCount++;
+            }
+        });
+
+        this.populateAppsTab();
+        this.populateBottomBarTab();
+        this.enableSave();
+
+        this.showNotification(
+            `Synced: ${addedCount} added, ${updatedCount} updated`,
+            'success'
+        );
+    }
+
+    // Categorize app into a group
+    categorizeApp(name, description) {
+        const text = (name + ' ' + (description || '')).toLowerCase();
+        
+        if (text.match(/chart|map|route|navigation|freeboard|plotter/)) {
+            return 'navigation';
+        } else if (text.match(/instrument|gauge|display|panel|kip/)) {
+            return 'instruments';
+        } else if (text.match(/anchor|alarm|autopilot|mydata|windlass/)) {
+            return 'utilities';
+        }
+        
+        return 'other';
+    }
+
+    // Get default groups
+    getDefaultGroups() {
+        return [
+            { id: 'navigation', name: 'Navigation', order: 1, apps: [] },
+            { id: 'instruments', name: 'Instruments', order: 2, apps: [] },
+            { id: 'utilities', name: 'Utilities', order: 3, apps: [] },
+            { id: 'other', name: 'Other', order: 999, apps: [] }
+        ];
     }
 
     // API Methods
@@ -21,13 +170,39 @@ class FairWindSKSettings {
             const response = await fetch(`${this.apiBase}/config`);
             if (!response.ok) throw new Error('Failed to load configuration');
             this.config = await response.json();
+            
+            // Ensure required fields exist
+            if (!this.config.bottomBar) {
+                this.config.bottomBar = ['', '', '', ''];
+            }
+            if (!this.config.apps) {
+                this.config.apps = [];
+            }
+            if (!this.config.appGroups) {
+                this.config.appGroups = this.getDefaultGroups();
+            }
+            
+            // Ensure all apps have a group
+            this.config.apps.forEach(app => {
+                if (!app.fairwind.group) {
+                    app.fairwind.group = 'other';
+                }
+                if (!app.fairwind.source) {
+                    app.fairwind.source = 'manual';
+                }
+            });
         } catch (error) {
             console.error('Error loading configuration:', error);
-            this.showNotification('Failed to load configuration', 'error');
+            this.showNotification('Failed to load configuration', 'danger');
         }
     }
 
     async saveConfig() {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return false;
+        }
+
         try {
             const response = await fetch(`${this.apiBase}/config`, {
                 method: 'PUT',
@@ -38,15 +213,21 @@ class FairWindSKSettings {
             if (!response.ok) throw new Error('Failed to save configuration');
             
             this.showNotification('Configuration saved successfully', 'success');
+            $('#saveBtn').prop('disabled', true);
             return true;
         } catch (error) {
             console.error('Error saving configuration:', error);
-            this.showNotification('Failed to save configuration', 'error');
+            this.showNotification('Failed to save configuration', 'danger');
             return false;
         }
     }
 
     async resetConfig() {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+
         if (!confirm('Are you sure you want to reset all settings to defaults?')) {
             return;
         }
@@ -61,376 +242,477 @@ class FairWindSKSettings {
             await this.loadConfig();
             this.populateUI();
             this.showNotification('Configuration reset to defaults', 'success');
+            $('#saveBtn').prop('disabled', true);
         } catch (error) {
             console.error('Error resetting configuration:', error);
-            this.showNotification('Failed to reset configuration', 'error');
+            this.showNotification('Failed to reset configuration', 'danger');
         }
     }
 
     // UI Population
     populateUI() {
         this.populateMainTab();
-        this.populateConnectionTab();
         this.populateSignalKTab();
         this.populateAppsTab();
+        this.populateBottomBarTab();
     }
 
     populateMainTab() {
         if (!this.config || !this.config.main) return;
 
-        // Window settings
-        document.getElementById('windowMode').value = this.config.main.windowMode || 'centered';
-        document.getElementById('windowWidth').value = this.config.main.windowWidth || 1024;
-        document.getElementById('windowHeight').value = this.config.main.windowHeight || 600;
-        document.getElementById('windowLeft').value = this.config.main.windowLeft || 0;
-        document.getElementById('windowTop').value = this.config.main.windowTop || 0;
-        document.getElementById('virtualKeyboard').checked = this.config.main.virtualKeyboard || false;
+        $('#windowMode').val(this.config.main.windowMode || 'centered');
+        $('#windowWidth').val(this.config.main.windowWidth || 1024);
+        $('#windowHeight').val(this.config.main.windowHeight || 600);
+        $('#windowLeft').val(this.config.main.windowLeft || 0);
+        $('#windowTop').val(this.config.main.windowTop || 0);
+        $('#virtualKeyboard').prop('checked', this.config.main.virtualKeyboard || false);
 
-        // Update window field states based on mode
         this.updateWindowFieldStates();
 
-        // Units
         if (this.config.units) {
-            document.getElementById('unitAirPressure').value = this.config.units.airPressure || 'hPa';
-            document.getElementById('unitAirTemperature').value = this.config.units.airTemperature || 'C';
-            document.getElementById('unitWaterTemperature').value = this.config.units.waterTemperature || 'C';
-            document.getElementById('unitDepth').value = this.config.units.depth || 'mt';
-            document.getElementById('unitDistance').value = this.config.units.distance || 'nm';
-            document.getElementById('unitVesselSpeed').value = this.config.units.vesselSpeed || 'kn';
-            document.getElementById('unitWindSpeed').value = this.config.units.windSpeed || 'kn';
-            document.getElementById('unitRange').value = this.config.units.range || 'rm';
+            $('#unitAirPressure').val(this.config.units.airPressure || 'hPa');
+            $('#unitAirTemperature').val(this.config.units.airTemperature || 'C');
+            $('#unitWaterTemperature').val(this.config.units.waterTemperature || 'C');
+            $('#unitDepth').val(this.config.units.depth || 'mt');
+            $('#unitDistance').val(this.config.units.distance || 'nm');
+            $('#unitVesselSpeed').val(this.config.units.vesselSpeed || 'kn');
+            $('#unitWindSpeed').val(this.config.units.windSpeed || 'kn');
+            $('#unitRange').val(this.config.units.range || 'rm');
         }
-    }
-
-    populateConnectionTab() {
-        if (!this.config || !this.config.connection) return;
-        document.getElementById('serverUrl').value = this.config.connection.server || '';
     }
 
     populateSignalKTab() {
         if (!this.config || !this.config.signalk) return;
 
-        const container = document.getElementById('signalkPaths');
-        container.innerHTML = '';
+        const tbody = $('#signalkPathsBody');
+        tbody.empty();
 
         Object.entries(this.config.signalk).forEach(([key, value]) => {
-            const pathItem = document.createElement('div');
-            pathItem.className = 'path-item';
+            const row = $('<tr>');
             
-            const label = document.createElement('div');
-            label.className = 'path-label';
-            label.textContent = this.getSignalKPathLabel(key);
+            const labelCell = $('<td>').text(this.getSignalKPathLabel(key));
+            const inputCell = $('<td>');
+            const input = $('<input>')
+                .attr('type', 'text')
+                .addClass('form-control form-control-sm')
+                .val(value)
+                .data('pathKey', key)
+                .on('change', () => this.enableSave());
             
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'input';
-            input.value = value;
-            input.dataset.pathKey = key;
+            if (!this.isAdmin) {
+                input.prop('readonly', true);
+            }
             
-            input.addEventListener('change', (e) => {
-                this.config.signalk[key] = e.target.value;
-            });
-            
-            pathItem.appendChild(label);
-            pathItem.appendChild(input);
-            container.appendChild(pathItem);
+            inputCell.append(input);
+            row.append(labelCell, inputCell);
+            tbody.append(row);
         });
     }
 
     populateAppsTab() {
         if (!this.config || !this.config.apps) return;
 
-        const container = document.getElementById('appsList');
-        container.innerHTML = '';
+        const container = $('#appGroupsContainer');
+        container.empty();
 
-        // Sort apps by order
-        const sortedApps = [...this.config.apps].sort((a, b) => {
-            const orderA = a.fairwind?.order || 0;
-            const orderB = b.fairwind?.order || 0;
-            return orderA - orderB;
+        // Organize apps by group
+        const groupedApps = {};
+        this.config.appGroups.forEach(group => {
+            groupedApps[group.id] = {
+                ...group,
+                apps: []
+            };
         });
 
-        sortedApps.forEach((app, index) => {
-            const appCard = this.createAppCard(app, index);
-            container.appendChild(appCard);
+        // Assign apps to groups
+        this.config.apps.forEach(app => {
+            const groupId = app.fairwind.group || 'other';
+            if (groupedApps[groupId]) {
+                groupedApps[groupId].apps.push(app);
+            }
+        });
+
+        // Sort groups by order
+        const sortedGroups = Object.values(groupedApps).sort((a, b) => a.order - b.order);
+
+        // Render groups
+        sortedGroups.forEach(group => {
+            if (group.apps.length > 0) {
+                const groupCard = this.createGroupCard(group);
+                container.append(groupCard);
+            }
+        });
+
+        // Make apps sortable within groups
+        if (this.isAdmin) {
+            $('.app-group-list').sortable({
+                connectWith: '.app-group-list',
+                handle: '.drag-handle',
+                placeholder: 'app-placeholder',
+                update: (event, ui) => {
+                    this.updateAppOrdersAndGroups();
+                    this.enableSave();
+                }
+            });
+        }
+    }
+
+    createGroupCard(group) {
+        const card = $('<div>').addClass('card mb-3');
+        
+        const header = $('<div>').addClass('card-header bg-light');
+        const title = $('<h6>').addClass('mb-0').html(`
+            <i class="fas fa-folder"></i> ${group.name}
+            <span class="badge badge-secondary ml-2">${group.apps.length}</span>
+        `);
+        header.append(title);
+        
+        const body = $('<div>').addClass('card-body p-2');
+        const appList = $('<div>')
+            .addClass('app-group-list')
+            .attr('data-group-id', group.id);
+        
+        // Sort apps by order
+        group.apps.sort((a, b) => (a.fairwind.order || 0) - (b.fairwind.order || 0));
+        
+        group.apps.forEach(app => {
+            const appItem = this.createAppItem(app);
+            appList.append(appItem);
+        });
+        
+        body.append(appList);
+        card.append(header, body);
+        
+        return card;
+    }
+
+    createAppItem(app) {
+        const item = $('<div>')
+            .addClass('app-item card mb-2')
+            .attr('data-app-name', app.name);
+        
+        const itemBody = $('<div>').addClass('card-body p-2');
+        const row = $('<div>').addClass('row align-items-center');
+        
+        // Drag handle
+        const dragCol = $('<div>').addClass('col-auto');
+        if (this.isAdmin) {
+            dragCol.html('<i class="fas fa-grip-vertical drag-handle text-muted" style="cursor: move;"></i>');
+        }
+        
+        // Icon
+        const iconCol = $('<div>').addClass('col-auto');
+        const icon = $('<i>').addClass('fas fa-mobile-alt text-primary');
+        iconCol.append(icon);
+        
+        // Details
+        const detailsCol = $('<div>').addClass('col');
+        const name = $('<strong>').text(app.signalk?.displayName || app.name);
+        const source = $('<span>')
+            .addClass(`badge badge-${app.fairwind.source === 'signalk' ? 'info' : 'secondary'} ml-2`)
+            .text(app.fairwind.source || 'manual');
+        const description = $('<small>').addClass('text-muted d-block').text(app.description || 'No description');
+        
+        detailsCol.append(name, source, description);
+        
+        // Controls
+        const controlsCol = $('<div>').addClass('col-auto');
+        
+        // Active checkbox
+        const activeCheck = $('<div>').addClass('custom-control custom-checkbox');
+        const checkboxId = `app-active-${app.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const checkbox = $('<input>')
+            .attr('type', 'checkbox')
+            .attr('id', checkboxId)
+            .addClass('custom-control-input')
+            .prop('checked', app.fairwind.active || false)
+            .on('change', (e) => {
+                app.fairwind.active = e.target.checked;
+                this.enableSave();
+                this.populateBottomBarTab();
+            });
+        const label = $('<label>')
+            .attr('for', checkboxId)
+            .addClass('custom-control-label')
+            .text('Active');
+        
+        if (!this.isAdmin) {
+            checkbox.prop('disabled', true);
+        }
+        
+        activeCheck.append(checkbox, label);
+        
+        // Delete button
+        const deleteBtn = $('<button>')
+            .addClass('btn btn-sm btn-danger ml-2')
+            .html('<i class="fas fa-trash"></i>')
+            .attr('title', 'Remove application')
+            .on('click', () => this.deleteApp(app.name));
+        
+        if (!this.isAdmin) {
+            deleteBtn.prop('disabled', true);
+        }
+        
+        controlsCol.append(activeCheck, deleteBtn);
+        
+        row.append(dragCol, iconCol, detailsCol, controlsCol);
+        itemBody.append(row);
+        item.append(itemBody);
+        
+        return item;
+    }
+
+    updateAppOrdersAndGroups() {
+        // Update app groups and orders based on current DOM state
+        $('.app-group-list').each((i, groupList) => {
+            const groupId = $(groupList).data('group-id');
+            $(groupList).find('.app-item').each((index, appItem) => {
+                const appName = $(appItem).data('app-name');
+                const app = this.config.apps.find(a => a.name === appName);
+                if (app) {
+                    app.fairwind.group = groupId;
+                    app.fairwind.order = index * 100;
+                }
+            });
         });
     }
 
-    createAppCard(app, index) {
-        const card = document.createElement('div');
-        card.className = 'app-card';
-        card.dataset.index = index;
+    populateBottomBarTab() {
+        if (!this.config) return;
 
-        // Icon
-        const icon = document.createElement('div');
-        icon.className = 'app-icon';
-        if (app.signalk?.appIcon) {
-            const img = document.createElement('img');
-            img.src = app.signalk.appIcon.replace('file://', '/');
-            img.alt = app.signalk?.displayName || app.name;
-            icon.appendChild(img);
-        } else {
-            icon.textContent = '📱';
+        if (!this.config.bottomBar) {
+            this.config.bottomBar = ['', '', '', ''];
         }
 
-        // Details
-        const details = document.createElement('div');
-        details.className = 'app-details';
-
-        const name = document.createElement('div');
-        name.className = 'app-name';
-        name.textContent = app.signalk?.displayName || app.name;
-
-        const description = document.createElement('div');
-        description.className = 'app-description';
-        description.textContent = app.description || 'No description';
-
-        const url = document.createElement('div');
-        url.className = 'app-url';
-        url.textContent = app.name;
-
-        details.appendChild(name);
-        details.appendChild(description);
-        details.appendChild(url);
-
-        // Controls
-        const controls = document.createElement('div');
-        controls.className = 'app-controls';
-
-        // Active checkbox
-        const activeWrapper = document.createElement('div');
-        activeWrapper.className = 'app-active';
-        
-        const activeCheckbox = document.createElement('input');
-        activeCheckbox.type = 'checkbox';
-        activeCheckbox.checked = app.fairwind?.active || false;
-        activeCheckbox.addEventListener('change', (e) => {
-            this.config.apps[index].fairwind.active = e.target.checked;
-        });
-
-        const activeLabel = document.createElement('label');
-        activeLabel.textContent = 'Active';
-        activeLabel.style.cursor = 'pointer';
-        activeLabel.appendChild(activeCheckbox);
-
-        activeWrapper.appendChild(activeLabel);
-
-        // Order controls
-        const orderWrapper = document.createElement('div');
-        orderWrapper.className = 'app-order';
-
-        const upBtn = document.createElement('button');
-        upBtn.className = 'btn-icon';
-        upBtn.innerHTML = '↑';
-        upBtn.title = 'Move up';
-        upBtn.addEventListener('click', () => this.moveApp(index, -1));
-
-        const downBtn = document.createElement('button');
-        downBtn.className = 'btn-icon';
-        downBtn.innerHTML = '↓';
-        downBtn.title = 'Move down';
-        downBtn.addEventListener('click', () => this.moveApp(index, 1));
-
-        orderWrapper.appendChild(upBtn);
-        orderWrapper.appendChild(downBtn);
-
-        // Delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn-icon btn-delete';
-        deleteBtn.innerHTML = '✕';
-        deleteBtn.title = 'Remove application';
-        deleteBtn.addEventListener('click', () => this.deleteApp(index));
-
-        controls.appendChild(activeWrapper);
-        controls.appendChild(orderWrapper);
-        controls.appendChild(deleteBtn);
-
-        card.appendChild(icon);
-        card.appendChild(details);
-        card.appendChild(controls);
-
-        return card;
+        for (let i = 1; i <= 4; i++) {
+            const select = $(`#bottomBar${i}`);
+            select.empty();
+            
+            select.append($('<option>').val('').text('-- None --'));
+            
+            if (this.config.apps) {
+                this.config.apps
+                    .filter(app => app.fairwind?.active)
+                    .forEach(app => {
+                        const displayName = app.signalk?.displayName || app.name;
+                        select.append($('<option>').val(app.name).text(displayName));
+                    });
+            }
+            
+            select.val(this.config.bottomBar[i - 1] || '');
+            
+            if (!this.isAdmin) {
+                select.prop('disabled', true);
+            }
+        }
     }
 
     // Event Listeners
     setupEventListeners() {
-        // Tab navigation
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
-        });
-
-        // Save button
-        document.getElementById('saveBtn').addEventListener('click', () => {
+        $('#saveBtn').on('click', () => {
             this.collectFormData();
             this.saveConfig();
         });
 
-        // Reset button
-        document.getElementById('resetBtn').addEventListener('click', () => this.resetConfig());
+        $('#resetBtn').on('click', () => this.resetConfig());
 
-        // Add app button
-        document.getElementById('addAppBtn').addEventListener('click', () => this.addNewApp());
+        $('#syncAppsBtn').on('click', () => this.syncAppsFromSignalK());
 
-        // Window mode change
-        document.getElementById('windowMode').addEventListener('change', () => {
+        $('#addManualAppBtn').on('click', () => this.showAddManualAppModal());
+        
+        $('#saveManualApp').on('click', () => this.addManualApp());
+
+        $('#windowMode').on('change', () => {
             this.updateWindowFieldStates();
+            this.enableSave();
         });
 
-        // Main settings listeners
-        this.setupMainTabListeners();
-    }
+        $('input, select').on('change input', () => this.enableSave());
 
-    setupMainTabListeners() {
-        const fields = [
-            'windowMode', 'windowWidth', 'windowHeight', 'windowLeft', 'windowTop',
-            'virtualKeyboard', 'unitAirPressure', 'unitAirTemperature', 
-            'unitWaterTemperature', 'unitDepth', 'unitDistance', 'unitVesselSpeed',
-            'unitWindSpeed', 'unitRange'
-        ];
+        $(document).on('change', '#signalkPathsBody input', function() {
+            const key = $(this).data('pathKey');
+            const value = $(this).val();
+            this.config.signalk[key] = value;
+            this.enableSave();
+        }.bind(this));
 
-        fields.forEach(fieldId => {
-            const element = document.getElementById(fieldId);
-            if (element) {
-                const eventType = element.type === 'checkbox' ? 'change' : 'input';
-                element.addEventListener(eventType, () => {
-                    // Auto-save is disabled, user must click Save
-                });
-            }
-        });
-
-        // Server URL
-        document.getElementById('serverUrl').addEventListener('input', () => {
-            // Auto-save is disabled
-        });
-    }
-
-    collectFormData() {
-        // Main settings
-        this.config.main.windowMode = document.getElementById('windowMode').value;
-        this.config.main.windowWidth = parseInt(document.getElementById('windowWidth').value);
-        this.config.main.windowHeight = parseInt(document.getElementById('windowHeight').value);
-        this.config.main.windowLeft = parseInt(document.getElementById('windowLeft').value);
-        this.config.main.windowTop = parseInt(document.getElementById('windowTop').value);
-        this.config.main.virtualKeyboard = document.getElementById('virtualKeyboard').checked;
-
-        // Units
-        this.config.units.airPressure = document.getElementById('unitAirPressure').value;
-        this.config.units.airTemperature = document.getElementById('unitAirTemperature').value;
-        this.config.units.waterTemperature = document.getElementById('unitWaterTemperature').value;
-        this.config.units.depth = document.getElementById('unitDepth').value;
-        this.config.units.distance = document.getElementById('unitDistance').value;
-        this.config.units.vesselSpeed = document.getElementById('unitVesselSpeed').value;
-        this.config.units.windSpeed = document.getElementById('unitWindSpeed').value;
-        this.config.units.range = document.getElementById('unitRange').value;
-
-        // Connection
-        this.config.connection.server = document.getElementById('serverUrl').value;
-
-        // Signal K paths are updated in real-time via event listeners
-        // Apps are updated in real-time via event listeners
-    }
-
-    // UI Helper Methods
-    switchTab(tabName) {
-        // Update tab buttons
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
-
-        // Update tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `${tabName}-tab`);
-        });
-    }
-
-    updateWindowFieldStates() {
-        const mode = document.getElementById('windowMode').value;
-        const widthField = document.getElementById('windowWidth');
-        const heightField = document.getElementById('windowHeight');
-        const leftField = document.getElementById('windowLeft');
-        const topField = document.getElementById('windowTop');
-
-        switch (mode) {
-            case 'centered':
-                widthField.disabled = false;
-                heightField.disabled = false;
-                leftField.disabled = true;
-                topField.disabled = true;
-                break;
-            case 'maximized':
-            case 'fullscreen':
-                widthField.disabled = true;
-                heightField.disabled = true;
-                leftField.disabled = true;
-                topField.disabled = true;
-                break;
-            default: // windowed
-                widthField.disabled = false;
-                heightField.disabled = false;
-                leftField.disabled = false;
-                topField.disabled = false;
+        for (let i = 1; i <= 4; i++) {
+            $(`#bottomBar${i}`).on('change', () => this.enableSave());
         }
     }
 
-    // App Management
-    addNewApp() {
+    showAddManualAppModal() {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+        
+        $('#manualAppForm')[0].reset();
+        $('#addManualAppModal').modal('show');
+    }
+
+    addManualApp() {
+        const form = $('#manualAppForm')[0];
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
         const newApp = {
-            name: 'new-app',
-            description: 'New Application',
+            name: $('#manualAppName').val(),
+            description: $('#manualAppDescription').val() || '',
+            url: $('#manualAppUrl').val(),
             fairwind: {
                 active: false,
-                order: this.config.apps.length * 100
+                order: this.config.apps.length * 100,
+                group: $('#manualAppGroup').val(),
+                source: 'manual'
             },
             signalk: {
-                displayName: 'New Application',
-                appIcon: null
+                displayName: $('#manualAppDisplayName').val(),
+                appIcon: $('#manualAppIcon').val() || null
             }
         };
 
+        // Check for duplicates
+        if (this.config.apps.find(app => app.name === newApp.name)) {
+            this.showNotification('An app with this name already exists', 'danger');
+            return;
+        }
+
         this.config.apps.push(newApp);
         this.populateAppsTab();
+        this.populateBottomBarTab();
+        this.enableSave();
+        
+        $('#addManualAppModal').modal('hide');
+        this.showNotification('Manual application added', 'success');
     }
 
-    moveApp(index, direction) {
-        const newIndex = index + direction;
-        if (newIndex < 0 || newIndex >= this.config.apps.length) return;
+    deleteApp(appName) {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
 
-        // Swap apps
-        [this.config.apps[index], this.config.apps[newIndex]] = 
-        [this.config.apps[newIndex], this.config.apps[index]];
-
-        // Update orders
-        this.config.apps.forEach((app, i) => {
-            app.fairwind.order = (i + 1) * 100;
-        });
-
-        this.populateAppsTab();
-    }
-
-    deleteApp(index) {
         if (!confirm('Are you sure you want to remove this application?')) {
             return;
         }
 
-        this.config.apps.splice(index, 1);
-        
-        // Reorder remaining apps
-        this.config.apps.forEach((app, i) => {
-            app.fairwind.order = (i + 1) * 100;
-        });
-
-        this.populateAppsTab();
+        const index = this.config.apps.findIndex(app => app.name === appName);
+        if (index !== -1) {
+            this.config.apps.splice(index, 1);
+            this.populateAppsTab();
+            this.populateBottomBarTab();
+            this.enableSave();
+            this.showNotification('Application removed', 'success');
+        }
     }
 
-    // Utilities
-    showNotification(message, type = 'info') {
-        const notification = document.getElementById('notification');
-        notification.textContent = message;
-        notification.className = `notification ${type} show`;
+    enableSave() {
+        if (this.isAdmin) {
+            $('#saveBtn').prop('disabled', false);
+        }
+    }
 
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 4000);
+    updateUIState() {
+        const isEditable = this.isAdmin;
+        
+        if (!isEditable) {
+            $('#adminOverlay').show();
+            $('input, select, button').not('#saveBtn, #resetBtn').prop('disabled', true);
+            $('#saveBtn, #resetBtn').prop('disabled', true);
+        } else {
+            $('#adminOverlay').hide();
+        }
+    }
+
+    collectFormData() {
+        // Main settings
+        this.config.main.windowMode = $('#windowMode').val();
+        this.config.main.windowWidth = parseInt($('#windowWidth').val());
+        this.config.main.windowHeight = parseInt($('#windowHeight').val());
+        this.config.main.windowLeft = parseInt($('#windowLeft').val());
+        this.config.main.windowTop = parseInt($('#windowTop').val());
+        this.config.main.virtualKeyboard = $('#virtualKeyboard').is(':checked');
+
+        // Units
+        this.config.units.airPressure = $('#unitAirPressure').val();
+        this.config.units.airTemperature = $('#unitAirTemperature').val();
+        this.config.units.waterTemperature = $('#unitWaterTemperature').val();
+        this.config.units.depth = $('#unitDepth').val();
+        this.config.units.distance = $('#unitDistance').val();
+        this.config.units.vesselSpeed = $('#unitVesselSpeed').val();
+        this.config.units.windSpeed = $('#unitWindSpeed').val();
+        this.config.units.range = $('#unitRange').val();
+
+        // Signal K paths
+        $('#signalkPathsBody input').each((i, input) => {
+            const key = $(input).data('pathKey');
+            this.config.signalk[key] = $(input).val();
+        });
+
+        // Update app orders and groups from DOM
+        this.updateAppOrdersAndGroups();
+
+        // Bottom bar
+        this.config.bottomBar = [];
+        for (let i = 1; i <= 4; i++) {
+            this.config.bottomBar.push($(`#bottomBar${i}`).val() || '');
+        }
+    }
+
+    updateWindowFieldStates() {
+        const mode = $('#windowMode').val();
+        const widthField = $('#windowWidth');
+        const heightField = $('#windowHeight');
+        const leftField = $('#windowLeft');
+        const topField = $('#windowTop');
+
+        switch (mode) {
+            case 'centered':
+                widthField.prop('disabled', false);
+                heightField.prop('disabled', false);
+                leftField.prop('disabled', true);
+                topField.prop('disabled', true);
+                break;
+            case 'maximized':
+            case 'fullscreen':
+                widthField.prop('disabled', true);
+                heightField.prop('disabled', true);
+                leftField.prop('disabled', true);
+                topField.prop('disabled', true);
+                break;
+            default:
+                widthField.prop('disabled', false);
+                heightField.prop('disabled', false);
+                leftField.prop('disabled', false);
+                topField.prop('disabled', false);
+        }
+
+        if (!this.isAdmin) {
+            widthField.prop('disabled', true);
+            heightField.prop('disabled', true);
+            leftField.prop('disabled', true);
+            topField.prop('disabled', true);
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        const toast = $('#notification');
+        const title = type === 'success' ? 'Success' : 
+                     type === 'danger' ? 'Error' : 
+                     type === 'warning' ? 'Warning' : 'Info';
+        
+        $('#toastTitle').text(title);
+        $('#toastBody').text(message);
+        
+        toast.removeClass('bg-success bg-danger bg-warning bg-info')
+            .addClass(`bg-${type === 'success' ? 'success' : 
+                          type === 'danger' ? 'danger' : 
+                          type === 'warning' ? 'warning' : 'info'}`);
+        
+        toast.toast('show');
     }
 
     getSignalKPathLabel(key) {
@@ -493,7 +775,6 @@ class FairWindSKSettings {
     }
 }
 
-// Initialize the app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+$(document).ready(() => {
     new FairWindSKSettings();
 });

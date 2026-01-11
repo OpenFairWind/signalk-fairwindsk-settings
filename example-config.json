@@ -30,6 +30,18 @@
       }
     },
     {
+      "description": "Youtube web application",
+      "fairwind": {
+        "active": true,
+        "order": 970
+      },
+      "name": "https://youtube.com",
+      "signalk": {
+        "appIcon": "file://icons/youtube_icon.png",
+        "displayName": "Youtube"
+      }
+    },
+    {
       "description": "Openlayers chart plotter implementation for Signal K",
       "fairwind": {
         "active": true,
@@ -39,6 +51,102 @@
       "signalk": {
         "appIcon": "./assets/icons/icon-72x72.png",
         "displayName": "Freeboard-SK"
+      }
+    },
+    {
+      "description": "Signal K instrument panel implemented as an HTML5 grid with draggable & resizable widgets",
+      "fairwind": {
+        "active": true,
+        "order": 101
+      },
+      "name": "@signalk/instrumentpanel",
+      "signalk": {
+        "appIcon": "./icons/instrumentpanel-72x72.png",
+        "displayName": "Instrumentpanel"
+      }
+    },
+    {
+      "description": "An advanced and versatile marine instrumentation package to display Signal K data.",
+      "fairwind": {
+        "active": true,
+        "order": 102
+      },
+      "name": "@mxtommy/kip",
+      "signalk": {
+        "appIcon": "assets/icon-72x72.png",
+        "displayName": "KIP Instrument MFD"
+      }
+    },
+    {
+      "description": "Plugin that checks the vessel position to see if there's anchor drift",
+      "fairwind": {
+        "active": true,
+        "order": 103
+      },
+      "name": "signalk-anchoralarm-plugin",
+      "signalk": {
+        "appIcon": "images/anchoralarm.png",
+        "displayName": "Anchor Alarm"
+      }
+    },
+    {
+      "description": "Signal K plugin to provide chart support for Signal K server",
+      "fairwind": {
+        "active": true,
+        "order": 100
+      },
+      "name": "@signalk/charts-plugin",
+      "signalk": {
+        "appIcon": null,
+        "displayName": null
+      }
+    },
+    {
+      "description": "Plugin that controls an autopilot",
+      "fairwind": {
+        "active": true,
+        "order": 103
+      },
+      "name": "@signalk/signalk-autopilot",
+      "signalk": {
+        "appIcon": "./appIcon-72x72.png",
+        "displayName": "Signal K autopilot"
+      }
+    },
+    {
+      "description": "Chain and depth display",
+      "fairwind": {
+        "active": true,
+        "order": 106
+      },
+      "name": "signalk-chain-plugin",
+      "signalk": {
+        "appIcon": null,
+        "displayName": null
+      }
+    },
+    {
+      "description": "Simple Signal K chart provider for local MBTiles with web and download management",
+      "fairwind": {
+        "active": true,
+        "order": 107
+      },
+      "name": "signalk-charts-provider-simple",
+      "signalk": {
+        "appIcon": "assets/charts_logo.png",
+        "displayName": "Charts Provider Simple"
+      }
+    },
+    {
+      "description": "PMTiles chart resource provider plugin for Signal K server",
+      "fairwind": {
+        "active": true,
+        "order": 108
+      },
+      "name": "signalk-pmtiles-plugin",
+      "signalk": {
+        "appIcon": "./webapp_icon.png",
+        "displayName": "Track PMTiles File Generator"
       }
     }
   ],

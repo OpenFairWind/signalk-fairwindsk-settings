@@ -1,14 +1,14 @@
 {
   "name": "signalk-fairwindsk-settings",
-  "version": "1.0.0",
-  "description": "FairWindSK Settings Management Plugin and WebApp for Signal K",
+  "version": "2.0.0",
+  "description": "FairWindSK Settings Management Plugin with Signal K Apps API Integration",
   "main": "index.js",
   "keywords": [
     "signalk-node-server-plugin",
     "signalk-webapp"
   ],
   "author": "FairWindSK Team",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/fairwindsk/signalk-fairwindsk-settings"
@@ -17,7 +17,7 @@
     "express": "^4.18.2"
   },
   "signalk": {
-    "appIcon": "./public/icon.png",
+    "appIcon": "./public/icon.svg",
     "displayName": "FairWindSK Settings"
   }
 }
