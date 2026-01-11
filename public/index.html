@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FairWindSK Settings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">FairWindSK</h1>
+                <p class="subtitle">Navigation System Configuration</p>
+            </div>
+            <div class="header-actions">
+                <button id="resetBtn" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 8a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M2 8V4M2 8h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Reset to Defaults
+                </button>
+                <button id="saveBtn" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M13 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h7l4 4v7a1 1 0 0 1-1 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M11 14v-5H5v5M5 2v4h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Save Configuration
+                </button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="main">Main</button>
+            <button class="tab" data-tab="connection">Connection</button>
+            <button class="tab" data-tab="signalk">Signal K Paths</button>
+            <button class="tab" data-tab="apps">Applications</button>
+        </nav>
+
+        <main class="content">
+            <!-- Main Tab -->
+            <div id="main-tab" class="tab-content active">
+                <section class="section">
+                    <h2 class="section-title">Window Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="windowMode">Display Mode</label>
+                            <select id="windowMode" class="input">
+                                <option value="windowed">Windowed</option>
+                                <option value="centered">Centered</option>
+                                <option value="maximized">Maximized</option>
+                                <option value="fullscreen">Full Screen</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="windowWidth">Width (px)</label>
+                            <input type="number" id="windowWidth" class="input" min="800" max="3840">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="windowHeight">Height (px)</label>
+                            <input type="number" id="windowHeight" class="input" min="600" max="2160">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="windowLeft">Left Position (px)</label>
+                            <input type="number" id="windowLeft" class="input" min="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="windowTop">Top Position (px)</label>
+                            <input type="number" id="windowTop" class="input" min="0">
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="virtualKeyboard">
+                                <span>Enable Virtual Keyboard</span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Units of Measurement</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="unitAirPressure">Air Pressure</label>
+                            <select id="unitAirPressure" class="input">
+                                <option value="hPa">HectoPascal (hPa)</option>
+                                <option value="mb">Millibar (mb)</option>
+                                <option value="psi">Pound per square inch (psi)</option>
+                                <option value="mmHg">Millimetre of Mercury (mmHg)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitAirTemperature">Air Temperature</label>
+                            <select id="unitAirTemperature" class="input">
+                                <option value="C">Celsius (°C)</option>
+                                <option value="F">Fahrenheit (°F)</option>
+                                <option value="K">Kelvin (°K)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitWaterTemperature">Water Temperature</label>
+                            <select id="unitWaterTemperature" class="input">
+                                <option value="C">Celsius (°C)</option>
+                                <option value="F">Fahrenheit (°F)</option>
+                                <option value="K">Kelvin (°K)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitDepth">Depth</label>
+                            <select id="unitDepth" class="input">
+                                <option value="mt">Meters (m)</option>
+                                <option value="ft">Feet (ft)</option>
+                                <option value="ftm">Fathoms (ftm)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitDistance">Distance</label>
+                            <select id="unitDistance" class="input">
+                                <option value="nm">Nautical Miles (nm)</option>
+                                <option value="km">Kilometers (km)</option>
+                                <option value="ml">Miles (ml)</option>
+                                <option value="m">Meters (m)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitVesselSpeed">Vessel Speed</label>
+                            <select id="unitVesselSpeed" class="input">
+                                <option value="kn">Knots (kn)</option>
+                                <option value="kmh">Kilometers per Hour (km/h)</option>
+                                <option value="mph">Miles per Hour (mph)</option>
+                                <option value="ms">Meters per Second (m/s)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitWindSpeed">Wind Speed</label>
+                            <select id="unitWindSpeed" class="input">
+                                <option value="kn">Knots (kn)</option>
+                                <option value="kmh">Kilometers per Hour (km/h)</option>
+                                <option value="mph">Miles per Hour (mph)</option>
+                                <option value="ms">Meters per Second (m/s)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitRange">Range</label>
+                            <select id="unitRange" class="input">
+                                <option value="rm">Meters (m)</option>
+                                <option value="rft">Feet (ft)</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Connection Tab -->
+            <div id="connection-tab" class="tab-content">
+                <section class="section">
+                    <h2 class="section-title">Signal K Server Connection</h2>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="serverUrl">Server URL</label>
+                            <input type="text" id="serverUrl" class="input" placeholder="http://localhost:3000">
+                            <small class="help-text">Enter the Signal K server URL or leave empty for auto-detection</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Authentication</h2>
+                    <div id="authStatus" class="auth-status">
+                        <div class="status-indicator"></div>
+                        <span>Not connected</span>
+                    </div>
+                    <p class="help-text">Authentication is managed through Signal K server settings</p>
+                </section>
+            </div>
+
+            <!-- Signal K Paths Tab -->
+            <div id="signalk-tab" class="tab-content">
+                <section class="section">
+                    <h2 class="section-title">Signal K Data Paths</h2>
+                    <p class="help-text">Configure which Signal K paths are used for different data types</p>
+                    <div id="signalkPaths" class="paths-grid"></div>
+                </section>
+            </div>
+
+            <!-- Applications Tab -->
+            <div id="apps-tab" class="tab-content">
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Installed Applications</h2>
+                        <button id="addAppBtn" class="btn btn-secondary btn-sm">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Add Application
+                        </button>
+                    </div>
+                    <div id="appsList" class="apps-list"></div>
+                </section>
+            </div>
+        </main>
+
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

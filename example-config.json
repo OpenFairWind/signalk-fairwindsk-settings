@@ -1,0 +1,116 @@
+{
+  "applications": {
+    "anchor": "signalk-anchoralarm-plugin",
+    "autopilot": "@signalk/signalk-autopilot",
+    "mydata": "signalk-mydata-plugin"
+  },
+  "apps": [
+    {
+      "description": "App for managing waypoints, routes, and files",
+      "fairwind": {
+        "active": false,
+        "order": 999
+      },
+      "name": "signalk-mydata-plugin",
+      "signalk": {
+        "appIcon": "./images/icon-72x72.png",
+        "displayName": "My Data"
+      }
+    },
+    {
+      "description": "Signal K Server",
+      "fairwind": {
+        "active": true,
+        "order": 1000
+      },
+      "name": "http:///",
+      "signalk": {
+        "appIcon": "file://icons/signalkserver_icon.png",
+        "displayName": "Signal K"
+      }
+    },
+    {
+      "description": "Openlayers chart plotter implementation for Signal K",
+      "fairwind": {
+        "active": true,
+        "order": 100
+      },
+      "name": "@signalk/freeboard-sk",
+      "signalk": {
+        "appIcon": "./assets/icons/icon-72x72.png",
+        "displayName": "Freeboard-SK"
+      }
+    }
+  ],
+  "connection": {
+    "server": "http://localhost:3000"
+  },
+  "main": {
+    "autopilot": "",
+    "virtualKeyboard": false,
+    "windowHeight": 600,
+    "windowLeft": 0,
+    "windowMode": "centered",
+    "windowTop": 20,
+    "windowWidth": 1024
+  },
+  "signalk": {
+    "anchor.actions.down": "plugins.windlassctl.down",
+    "anchor.actions.drop": "plugins.anchoralarm.dropAnchor",
+    "anchor.actions.radius": "plugins.anchoralarm.setRadius",
+    "anchor.actions.raise": "plugins.anchoralarm.raiseAnchor",
+    "anchor.actions.release": "plugins.windlassctl.release",
+    "anchor.actions.reset": "plugins.windlassctl.reset",
+    "anchor.actions.rode": "plugins.anchoralarm.setRodeLength",
+    "anchor.actions.set": "plugins.anchoralarm.setManualAnchor",
+    "anchor.actions.up": "plugins.windlassctl.up",
+    "anchor.bearing": "navigation.anchor.bearingTrue",
+    "anchor.depth": "environment.depth.belowTransducer",
+    "anchor.distance": "navigation.anchor.distanceFromBow",
+    "anchor.fudge": "navigation.anchor.fudgeFactor",
+    "anchor.max": "navigation.anchor.maxRadius",
+    "anchor.meta": "navigation.anchor.meta",
+    "anchor.position": "navigation.anchor.position",
+    "anchor.radius": "navigation.anchor.currentRadius",
+    "anchor.rode": "winches.windlass.rode",
+    "autopilot.mode": "steering.autopilot.mode",
+    "autopilot.state": "steering.autopilot.state",
+    "autopilot.target.heading": "steering.autopilot.target.headingMagnetic",
+    "autopilot.target.windAngle": "steering.autopilot.target.windAngleApparent",
+    "btw": "navigation.course.calcValues.bearingTrue",
+    "cog": "navigation.courseOverGroundTrue",
+    "dpt": "environment.depth.belowTransducer",
+    "dtg": "navigation.course.calcValues.distance",
+    "eta": "navigation.course.calcValues.estimatedTimeOfArrival",
+    "hdg": "navigation.headingTrue",
+    "notifications": "notifications",
+    "notifications.abandon": "notifications.abandon",
+    "notifications.adrift": "notifications.adrift",
+    "notifications.anchor": "notifications.anchor",
+    "notifications.fire": "notifications.fire",
+    "notifications.piracy": "notifications.piracy",
+    "notifications.pob": "notifications.mob",
+    "notifications.sinking": "notifications.sinking",
+    "pob.bearing": "navigation.course.calcValues.bearingTrue",
+    "pob.distance": "navigation.course.calcValues.distance",
+    "pob.startTime": "navigation.courseGreatCircle.activeRoute.startTime",
+    "pos": "navigation.position",
+    "rsa": "steering.rudderAngle",
+    "sog": "navigation.speedOverGround",
+    "stw": "navigation.speedThroughWater",
+    "ttg": "navigation.course.calcValues.timeToGo",
+    "vmg": "performance.velocityMadeGood",
+    "wpt": "navigation.course.nextPoint",
+    "xte": "navigation.course.calcValues.crossTrackError"
+  },
+  "units": {
+    "airPressure": "hPa",
+    "airTemperature": "C",
+    "depth": "mt",
+    "distance": "nm",
+    "range": "rm",
+    "vesselSpeed": "kn",
+    "waterTemperature": "C",
+    "windSpeed": "kn"
+  }
+}
