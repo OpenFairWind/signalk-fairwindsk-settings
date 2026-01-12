@@ -1,11 +1,12 @@
 {
   "name": "signalk-fairwindsk-settings",
-  "version": "2.0.0",
-  "description": "FairWindSK Settings Management Plugin with Signal K Apps API Integration",
+  "version": "3.0.0",
+  "description": "FairWindSK Settings Management Plugin with Folder-based Organization",
   "main": "index.js",
   "keywords": [
     "signalk-node-server-plugin",
-    "signalk-webapp"
+    "signalk-webapp",
+    "fairwind"
   ],
   "author": "FairWindSK Team",
   "license": "Apache-2.0",
@@ -17,7 +18,7 @@
     "express": "^4.18.2"
   },
   "signalk": {
-    "appIcon": "./public/icon.svg",
+    "appIcon": "./public/icon.png",
     "displayName": "FairWindSK Settings"
   }
 }

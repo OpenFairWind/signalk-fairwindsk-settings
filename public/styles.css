@@ -1,4 +1,4 @@
-/* Custom styles for FairWindSK Settings with Grouping */
+/* FairWindSK Settings v3.0 - Folder-based Management */
 
 body {
     background-color: #f8f9fa;
@@ -7,6 +7,10 @@ body {
 
 .navbar {
     box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.navbar-brand img {
+    vertical-align: middle;
 }
 
 .card {
@@ -44,6 +48,78 @@ body {
     background-color: transparent;
 }
 
+/* Folder Tree */
+.folder-node {
+    margin-bottom: 1rem;
+}
+
+.folder-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.folder-name {
+    flex: 1;
+    font-size: 1.1rem;
+    color: #495057;
+}
+
+.folder-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.folder-actions .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.folder-apps {
+    margin-bottom: 0.5rem;
+}
+
+.subfolders {
+    border-left: 2px dashed #dee2e6;
+    padding-left: 1rem;
+}
+
+/* App Items */
+.app-item {
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.app-item:hover {
+    border-left-color: #17a2b8;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+
+.app-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.font-monospace {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.875rem;
+}
+
+/* Badges */
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+/* Tables */
 .table th {
     font-weight: 600;
     background-color: #f8f9fa;
@@ -54,6 +130,7 @@ body {
     background-color: #f8f9fa;
 }
 
+/* Buttons */
 .btn {
     font-weight: 500;
 }
@@ -62,6 +139,7 @@ body {
     margin-right: 0.25rem;
 }
 
+/* Forms */
 .form-control:focus {
     border-color: #007bff;
     box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
@@ -72,67 +150,7 @@ body {
     border-color: #007bff;
 }
 
-/* App Groups */
-.app-group-list {
-    min-height: 60px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    padding: 0.5rem;
-}
-
-.app-group-list:empty::before {
-    content: 'Drag apps here';
-    display: block;
-    text-align: center;
-    color: #6c757d;
-    padding: 1rem;
-    font-style: italic;
-}
-
-.app-item {
-    cursor: move;
-    transition: all 0.2s;
-    border-left: 3px solid transparent;
-}
-
-.app-item:hover {
-    border-left-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-
-.app-item .drag-handle {
-    cursor: move;
-    user-select: none;
-}
-
-.app-placeholder {
-    background-color: #e9ecef;
-    border: 2px dashed #007bff;
-    margin-bottom: 0.5rem;
-    height: 60px;
-    border-radius: 4px;
-}
-
-.ui-sortable-helper {
-    opacity: 0.8;
-    box-shadow: 0 4px 12px rgba(0,0,0,.3);
-}
-
-/* App Group Cards */
-.app-group-list .app-item {
-    background-color: white;
-}
-
-/* Source Badge */
-.badge-info {
-    background-color: #17a2b8;
-}
-
-.badge-secondary {
-    background-color: #6c757d;
-}
-
-/* Toast notification positioning */
+/* Toast notifications */
 .toast-container {
     position: fixed;
     top: 80px;
@@ -184,16 +202,14 @@ body {
     margin: 20px;
 }
 
-/* Modal */
+/* Modals */
 .modal-header {
     background-color: #f8f9fa;
     border-bottom: 2px solid #007bff;
 }
 
-/* Font monospace */
-.font-monospace {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.875rem;
+.modal-lg {
+    max-width: 800px;
 }
 
 /* Bottom bar slots */
@@ -201,7 +217,26 @@ body {
     font-weight: 500;
 }
 
-/* Responsive adjustments */
+/* Signal K paths table */
+#signalkPathsBody input {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.875rem;
+}
+
+/* Disabled state */
+input:disabled,
+select:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+/* Badges */
+.badge {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
     .navbar-brand {
         font-size: 1rem;
@@ -216,19 +251,29 @@ body {
         font-size: 1rem;
     }
     
-    .btn-group-sm .btn {
-        font-size: 0.75rem;
+    .folder-header {
+        flex-wrap: wrap;
+    }
+    
+    .folder-actions {
+        width: 100%;
+        margin-top: 0.5rem;
+        justify-content: flex-end;
+    }
+    
+    .app-item .row {
+        flex-direction: column;
+    }
+    
+    .app-item .col-auto,
+    .app-item .col {
+        width: 100%;
+        max-width: 100%;
     }
     
     .app-item .col-auto {
-        flex: 0 0 auto;
-        max-width: 100%;
-    }
-    
-    .app-item .col {
-        flex-basis: 0;
-        flex-grow: 1;
-        max-width: 100%;
+        text-align: center;
+        margin-bottom: 0.5rem;
     }
 }
 
@@ -249,43 +294,37 @@ body {
     }
 }
 
-/* Signal K paths table */
-#signalkPathsBody input {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.875rem;
-}
-
-/* Disable state styling */
-input:disabled,
-select:disabled {
-    background-color: #e9ecef;
-    cursor: not-allowed;
-}
-
-/* Badge improvements */
-.badge {
-    font-weight: 600;
-    padding: 0.35em 0.65em;
-}
-
-/* Group header */
-.card-header.bg-light {
-    background-color: #f8f9fa !important;
-    font-weight: 600;
-}
-
-.card-header.bg-light h6 {
-    margin-bottom: 0;
-    color: #495057;
-}
-
 /* Smooth transitions */
-.card, .app-item, .btn {
+.card, .app-item, .btn, .folder-header {
     transition: all 0.2s ease;
 }
 
 /* Empty state */
-.app-group-list:empty {
-    border: 2px dashed #dee2e6;
-    background-color: #fff;
+.folder-apps:empty::before {
+    content: 'No applications in this folder';
+    display: block;
+    text-align: center;
+    color: #6c757d;
+    padding: 1rem;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

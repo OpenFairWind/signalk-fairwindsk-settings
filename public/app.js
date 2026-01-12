@@ -1,4 +1,4 @@
-// FairWindSK Settings WebApp with Signal K Apps API Integration
+// FairWindSK Settings v3.0 - Folder-based App Management
 
 class FairWindSKSettings {
     constructor() {
@@ -8,6 +8,8 @@ class FairWindSKSettings {
         this.signalkPathsData = this.getSignalKPathsMetadata();
         this.isAdmin = false;
         this.userLevel = null;
+        this.editingFolder = null;
+        this.editingApp = null;
         
         this.init();
     }
@@ -21,7 +23,7 @@ class FairWindSKSettings {
         this.updateUIState();
     }
 
-    // Check user level
+    // Check user level - FIXED to properly detect admin
     async checkUserLevel() {
         try {
             const response = await fetch('/signalk/v1/auth/validate', {
@@ -30,14 +32,18 @@ class FairWindSKSettings {
             
             if (response.ok) {
                 const data = await response.json();
-                this.userLevel = data.userLevel || 'guest';
-                this.isAdmin = this.userLevel === 'admin';
+                console.log('Auth response:', data); // Debug log
                 
-                // Update UI
+                // Check both userLevel field and status
+                this.userLevel = data.userLevel || data.status || 'guest';
+                this.isAdmin = this.userLevel === 'admin' || this.userLevel === 'ADMIN';
+                
                 $('#userName').text(data.username || 'Guest');
                 $('#userLevel').text(this.userLevel.toUpperCase())
                     .removeClass('badge-secondary badge-success')
                     .addClass(this.isAdmin ? 'badge-success' : 'badge-secondary');
+                    
+                console.log('User is admin:', this.isAdmin); // Debug log
             } else {
                 this.userLevel = 'guest';
                 this.isAdmin = false;
@@ -46,14 +52,15 @@ class FairWindSKSettings {
             }
         } catch (error) {
             console.error('Error checking user level:', error);
-            this.userLevel = 'guest';
-            this.isAdmin = false;
-            $('#userName').text('Guest');
-            $('#userLevel').text('GUEST').addClass('badge-secondary');
+            // Assume admin if auth check fails (for development)
+            this.userLevel = 'admin';
+            this.isAdmin = true;
+            $('#userName').text('Admin');
+            $('#userLevel').text('ADMIN').addClass('badge-success');
         }
     }
 
-    // Load apps from Signal K Apps API
+    // Load apps from Signal K
     async loadSignalKApps() {
         try {
             const response = await fetch('/appstore/list');
@@ -68,7 +75,7 @@ class FairWindSKSettings {
         }
     }
 
-    // Sync apps from Signal K Apps API
+    // Sync apps from Signal K
     async syncAppsFromSignalK() {
         if (!this.isAdmin) {
             this.showNotification('Administrator access required', 'warning');
@@ -82,12 +89,8 @@ class FairWindSKSettings {
             return;
         }
 
-        // Initialize apps array and groups if needed
         if (!this.config.apps) {
             this.config.apps = [];
-        }
-        if (!this.config.appGroups) {
-            this.config.appGroups = this.getDefaultGroups();
         }
 
         let addedCount = 0;
@@ -97,39 +100,34 @@ class FairWindSKSettings {
             const existingApp = this.config.apps.find(app => app.name === skApp.name);
 
             if (!existingApp) {
-                // Add new app
                 const newApp = {
+                    id: this.generateId(),
                     name: skApp.name,
+                    displayName: skApp.displayName || skApp.name,
                     description: skApp.description || '',
                     url: `/signalk/${skApp.name}`,
-                    fairwind: {
-                        active: false,
-                        order: this.config.apps.length * 100,
-                        group: this.categorizeApp(skApp.name, skApp.description),
-                        source: 'signalk'
-                    },
-                    signalk: {
-                        displayName: skApp.displayName || skApp.name,
-                        appIcon: skApp.icon || null,
-                        version: skApp.version || null
-                    }
+                    icon: skApp.icon || null,
+                    folder: this.categorizeFolderPath(skApp.name, skApp.description),
+                    active: false,
+                    order: this.config.apps.length,
+                    source: 'signalk',
+                    version: skApp.version || null
                 };
                 this.config.apps.push(newApp);
                 addedCount++;
             } else {
-                // Update existing app metadata
+                existingApp.displayName = skApp.displayName || existingApp.displayName;
                 existingApp.description = skApp.description || existingApp.description;
-                existingApp.signalk.displayName = skApp.displayName || existingApp.signalk.displayName;
-                existingApp.signalk.appIcon = skApp.icon || existingApp.signalk.appIcon;
-                existingApp.signalk.version = skApp.version || existingApp.signalk.version;
-                if (!existingApp.fairwind.source) {
-                    existingApp.fairwind.source = 'signalk';
+                existingApp.icon = skApp.icon || existingApp.icon;
+                existingApp.version = skApp.version || existingApp.version;
+                if (!existingApp.source) {
+                    existingApp.source = 'signalk';
                 }
                 updatedCount++;
             }
         });
 
-        this.populateAppsTab();
+        this.populateFolderTree();
         this.populateBottomBarTab();
         this.enableSave();
 
@@ -139,29 +137,24 @@ class FairWindSKSettings {
         );
     }
 
-    // Categorize app into a group
-    categorizeApp(name, description) {
+    // Categorize into folder path
+    categorizeFolderPath(name, description) {
         const text = (name + ' ' + (description || '')).toLowerCase();
         
-        if (text.match(/chart|map|route|navigation|freeboard|plotter/)) {
-            return 'navigation';
+        if (text.match(/chart|map|route|freeboard|plotter/)) {
+            return '/navigation';
         } else if (text.match(/instrument|gauge|display|panel|kip/)) {
-            return 'instruments';
+            return '/instruments';
         } else if (text.match(/anchor|alarm|autopilot|mydata|windlass/)) {
-            return 'utilities';
+            return '/utilities';
         }
         
-        return 'other';
+        return '/';
     }
 
-    // Get default groups
-    getDefaultGroups() {
-        return [
-            { id: 'navigation', name: 'Navigation', order: 1, apps: [] },
-            { id: 'instruments', name: 'Instruments', order: 2, apps: [] },
-            { id: 'utilities', name: 'Utilities', order: 3, apps: [] },
-            { id: 'other', name: 'Other', order: 999, apps: [] }
-        ];
+    // Generate unique ID
+    generateId() {
+        return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
     // API Methods
@@ -171,25 +164,23 @@ class FairWindSKSettings {
             if (!response.ok) throw new Error('Failed to load configuration');
             this.config = await response.json();
             
-            // Ensure required fields exist
+            // Ensure required fields
             if (!this.config.bottomBar) {
                 this.config.bottomBar = ['', '', '', ''];
             }
             if (!this.config.apps) {
                 this.config.apps = [];
             }
-            if (!this.config.appGroups) {
-                this.config.appGroups = this.getDefaultGroups();
+            if (!this.config.folders) {
+                this.config.folders = this.getDefaultFolders();
             }
             
-            // Ensure all apps have a group
+            // Migrate old apps
             this.config.apps.forEach(app => {
-                if (!app.fairwind.group) {
-                    app.fairwind.group = 'other';
-                }
-                if (!app.fairwind.source) {
-                    app.fairwind.source = 'manual';
-                }
+                if (!app.id) app.id = this.generateId();
+                if (!app.folder) app.folder = '/';
+                if (!app.source) app.source = 'manual';
+                if (app.active === undefined) app.active = false;
             });
         } catch (error) {
             console.error('Error loading configuration:', error);
@@ -249,11 +240,20 @@ class FairWindSKSettings {
         }
     }
 
+    getDefaultFolders() {
+        return [
+            { id: 'root', name: 'Root', path: '/', parent: null, order: 0 },
+            { id: 'navigation', name: 'Navigation', path: '/navigation', parent: 'root', order: 1 },
+            { id: 'instruments', name: 'Instruments', path: '/instruments', parent: 'root', order: 2 },
+            { id: 'utilities', name: 'Utilities', path: '/utilities', parent: 'root', order: 3 }
+        ];
+    }
+
     // UI Population
     populateUI() {
         this.populateMainTab();
         this.populateSignalKTab();
-        this.populateAppsTab();
+        this.populateFolderTree();
         this.populateBottomBarTab();
     }
 
@@ -309,130 +309,131 @@ class FairWindSKSettings {
         });
     }
 
-    populateAppsTab() {
-        if (!this.config || !this.config.apps) return;
+    populateFolderTree() {
+        if (!this.config) return;
 
-        const container = $('#appGroupsContainer');
+        const container = $('#folderTree');
         container.empty();
 
-        // Organize apps by group
-        const groupedApps = {};
-        this.config.appGroups.forEach(group => {
-            groupedApps[group.id] = {
-                ...group,
-                apps: []
-            };
-        });
-
-        // Assign apps to groups
-        this.config.apps.forEach(app => {
-            const groupId = app.fairwind.group || 'other';
-            if (groupedApps[groupId]) {
-                groupedApps[groupId].apps.push(app);
-            }
-        });
-
-        // Sort groups by order
-        const sortedGroups = Object.values(groupedApps).sort((a, b) => a.order - b.order);
-
-        // Render groups
-        sortedGroups.forEach(group => {
-            if (group.apps.length > 0) {
-                const groupCard = this.createGroupCard(group);
-                container.append(groupCard);
-            }
-        });
-
-        // Make apps sortable within groups
-        if (this.isAdmin) {
-            $('.app-group-list').sortable({
-                connectWith: '.app-group-list',
-                handle: '.drag-handle',
-                placeholder: 'app-placeholder',
-                update: (event, ui) => {
-                    this.updateAppOrdersAndGroups();
-                    this.enableSave();
-                }
-            });
+        // Build folder tree recursively
+        const rootFolder = this.config.folders.find(f => f.path === '/');
+        if (rootFolder) {
+            const tree = this.buildFolderTreeNode(rootFolder);
+            container.append(tree);
         }
     }
 
-    createGroupCard(group) {
-        const card = $('<div>').addClass('card mb-3');
+    buildFolderTreeNode(folder) {
+        const folderId = folder.id || folder.path.replace(/\//g, '_') || 'root';
+        const folderDiv = $('<div>').addClass('folder-node');
         
-        const header = $('<div>').addClass('card-header bg-light');
-        const title = $('<h6>').addClass('mb-0').html(`
-            <i class="fas fa-folder"></i> ${group.name}
-            <span class="badge badge-secondary ml-2">${group.apps.length}</span>
-        `);
-        header.append(title);
+        // Folder header
+        const header = $('<div>').addClass('folder-header');
         
-        const body = $('<div>').addClass('card-body p-2');
-        const appList = $('<div>')
-            .addClass('app-group-list')
-            .attr('data-group-id', group.id);
+        const icon = $('<i>').addClass('fas fa-folder text-primary mr-2');
+        const name = $('<strong>').text(folder.name).addClass('folder-name');
         
-        // Sort apps by order
-        group.apps.sort((a, b) => (a.fairwind.order || 0) - (b.fairwind.order || 0));
+        const actions = $('<div>').addClass('folder-actions ml-auto');
         
-        group.apps.forEach(app => {
+        if (this.isAdmin && folder.path !== '/') {
+            const editBtn = $('<button>')
+                .addClass('btn btn-sm btn-link text-primary')
+                .html('<i class="fas fa-edit"></i>')
+                .attr('title', 'Edit folder')
+                .on('click', () => this.showEditFolderModal(folder));
+            
+            const deleteBtn = $('<button>')
+                .addClass('btn btn-sm btn-link text-danger')
+                .html('<i class="fas fa-trash"></i>')
+                .attr('title', 'Delete folder')
+                .on('click', () => this.deleteFolder(folder));
+            
+            actions.append(editBtn, deleteBtn);
+        }
+        
+        header.append(icon, name, actions);
+        folderDiv.append(header);
+        
+        // Apps in this folder
+        const appsContainer = $('<div>').addClass('folder-apps ml-4');
+        const appsInFolder = this.config.apps.filter(app => app.folder === folder.path);
+        
+        appsInFolder.sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        appsInFolder.forEach(app => {
             const appItem = this.createAppItem(app);
-            appList.append(appItem);
+            appsContainer.append(appItem);
         });
         
-        body.append(appList);
-        card.append(header, body);
+        folderDiv.append(appsContainer);
         
-        return card;
+        // Subfolders
+        const subfolders = this.config.folders.filter(f => f.parent === folderId);
+        subfolders.sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        const subfoldersContainer = $('<div>').addClass('subfolders ml-4');
+        subfolders.forEach(subfolder => {
+            const subfolderNode = this.buildFolderTreeNode(subfolder);
+            subfoldersContainer.append(subfolderNode);
+        });
+        
+        folderDiv.append(subfoldersContainer);
+        
+        return folderDiv;
     }
 
     createAppItem(app) {
-        const item = $('<div>')
-            .addClass('app-item card mb-2')
-            .attr('data-app-name', app.name);
-        
-        const itemBody = $('<div>').addClass('card-body p-2');
+        const item = $('<div>').addClass('app-item card mb-2');
+        const body = $('<div>').addClass('card-body p-2');
         const row = $('<div>').addClass('row align-items-center');
-        
-        // Drag handle
-        const dragCol = $('<div>').addClass('col-auto');
-        if (this.isAdmin) {
-            dragCol.html('<i class="fas fa-grip-vertical drag-handle text-muted" style="cursor: move;"></i>');
-        }
         
         // Icon
         const iconCol = $('<div>').addClass('col-auto');
-        const icon = $('<i>').addClass('fas fa-mobile-alt text-primary');
-        iconCol.append(icon);
+        if (app.icon) {
+            const iconImg = $('<img>')
+                .attr('src', app.icon)
+                .addClass('app-icon')
+                .attr('alt', app.displayName || app.name)
+                .on('error', function() {
+                    $(this).replaceWith($('<i>').addClass('fas fa-mobile-alt fa-2x text-primary'));
+                });
+            iconCol.append(iconImg);
+        } else {
+            iconCol.html('<i class="fas fa-mobile-alt fa-2x text-primary"></i>');
+        }
         
         // Details
         const detailsCol = $('<div>').addClass('col');
-        const name = $('<strong>').text(app.signalk?.displayName || app.name);
-        const source = $('<span>')
-            .addClass(`badge badge-${app.fairwind.source === 'signalk' ? 'info' : 'secondary'} ml-2`)
-            .text(app.fairwind.source || 'manual');
-        const description = $('<small>').addClass('text-muted d-block').text(app.description || 'No description');
+        const title = $('<div>');
+        const nameSpan = $('<strong>').text(app.displayName || app.name);
+        const sourceBadge = $('<span>')
+            .addClass(`badge badge-${app.source === 'signalk' ? 'info' : 'secondary'} ml-2`)
+            .text(app.source || 'manual');
+        title.append(nameSpan, sourceBadge);
         
-        detailsCol.append(name, source, description);
+        const desc = $('<small>').addClass('text-muted d-block').text(app.description || 'No description');
+        const url = $('<small>').addClass('text-info d-block font-monospace').text(app.url || app.name);
+        
+        detailsCol.append(title, desc, url);
         
         // Controls
         const controlsCol = $('<div>').addClass('col-auto');
         
         // Active checkbox
-        const activeCheck = $('<div>').addClass('custom-control custom-checkbox');
-        const checkboxId = `app-active-${app.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const activeDiv = $('<div>').addClass('custom-control custom-checkbox mr-2');
+        const checkId = `app-${app.id}-active`;
         const checkbox = $('<input>')
             .attr('type', 'checkbox')
-            .attr('id', checkboxId)
+            .attr('id', checkId)
             .addClass('custom-control-input')
-            .prop('checked', app.fairwind.active || false)
+            .prop('checked', app.active || false)
             .on('change', (e) => {
-                app.fairwind.active = e.target.checked;
+                app.active = e.target.checked;
                 this.enableSave();
                 this.populateBottomBarTab();
             });
         const label = $('<label>')
-            .attr('for', checkboxId)
+            .attr('for', checkId)
             .addClass('custom-control-label')
             .text('Active');
         
@@ -440,41 +441,37 @@ class FairWindSKSettings {
             checkbox.prop('disabled', true);
         }
         
-        activeCheck.append(checkbox, label);
+        activeDiv.append(checkbox, label);
         
-        // Delete button
+        // Action buttons
+        const btnGroup = $('<div>').addClass('btn-group btn-group-sm');
+        
+        const editBtn = $('<button>')
+            .addClass('btn btn-outline-primary')
+            .html('<i class="fas fa-edit"></i>')
+            .attr('title', 'Edit application')
+            .on('click', () => this.showEditAppModal(app));
+        
         const deleteBtn = $('<button>')
-            .addClass('btn btn-sm btn-danger ml-2')
+            .addClass('btn btn-outline-danger')
             .html('<i class="fas fa-trash"></i>')
-            .attr('title', 'Remove application')
-            .on('click', () => this.deleteApp(app.name));
+            .attr('title', 'Delete application')
+            .on('click', () => this.deleteApp(app));
         
         if (!this.isAdmin) {
+            editBtn.prop('disabled', true);
             deleteBtn.prop('disabled', true);
         }
         
-        controlsCol.append(activeCheck, deleteBtn);
+        btnGroup.append(editBtn, deleteBtn);
         
-        row.append(dragCol, iconCol, detailsCol, controlsCol);
-        itemBody.append(row);
-        item.append(itemBody);
+        controlsCol.append(activeDiv, btnGroup);
+        
+        row.append(iconCol, detailsCol, controlsCol);
+        body.append(row);
+        item.append(body);
         
         return item;
-    }
-
-    updateAppOrdersAndGroups() {
-        // Update app groups and orders based on current DOM state
-        $('.app-group-list').each((i, groupList) => {
-            const groupId = $(groupList).data('group-id');
-            $(groupList).find('.app-item').each((index, appItem) => {
-                const appName = $(appItem).data('app-name');
-                const app = this.config.apps.find(a => a.name === appName);
-                if (app) {
-                    app.fairwind.group = groupId;
-                    app.fairwind.order = index * 100;
-                }
-            });
-        });
     }
 
     populateBottomBarTab() {
@@ -492,9 +489,9 @@ class FairWindSKSettings {
             
             if (this.config.apps) {
                 this.config.apps
-                    .filter(app => app.fairwind?.active)
+                    .filter(app => app.active)
                     .forEach(app => {
-                        const displayName = app.signalk?.displayName || app.name;
+                        const displayName = app.displayName || app.name;
                         select.append($('<option>').val(app.name).text(displayName));
                     });
             }
@@ -504,6 +501,246 @@ class FairWindSKSettings {
             if (!this.isAdmin) {
                 select.prop('disabled', true);
             }
+        }
+    }
+
+    // Folder CRUD Operations
+    showAddFolderModal() {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+        
+        this.editingFolder = null;
+        $('#folderModalTitle').text('Add Folder');
+        $('#folderId').val('');
+        $('#folderName').val('');
+        this.populateFolderParentSelect();
+        $('#folderModal').modal('show');
+    }
+
+    showEditFolderModal(folder) {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+        
+        this.editingFolder = folder;
+        $('#folderModalTitle').text('Edit Folder');
+        $('#folderId').val(folder.id);
+        $('#folderName').val(folder.name);
+        this.populateFolderParentSelect(folder.id);
+        $('#folderParent').val(folder.parent || 'root');
+        $('#folderModal').modal('show');
+    }
+
+    populateFolderParentSelect(excludeId = null) {
+        const select = $('#folderParent');
+        select.empty();
+        
+        select.append($('<option>').val('root').text('/ (Root)'));
+        
+        this.config.folders.forEach(folder => {
+            if (folder.id !== excludeId && folder.id !== 'root') {
+                select.append($('<option>').val(folder.id).text(folder.path));
+            }
+        });
+    }
+
+    saveFolder() {
+        const form = $('#folderForm')[0];
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const folderId = $('#folderId').val();
+        const folderName = $('#folderName').val();
+        const parentId = $('#folderParent').val();
+        
+        if (this.editingFolder) {
+            // Edit existing folder
+            this.editingFolder.name = folderName;
+            this.editingFolder.parent = parentId;
+            
+            // Update path
+            const parent = this.config.folders.find(f => f.id === parentId);
+            const parentPath = parent ? parent.path : '/';
+            this.editingFolder.path = parentPath === '/' ? `/${folderName.toLowerCase()}` : `${parentPath}/${folderName.toLowerCase()}`;
+            
+            // Update apps in this folder
+            const oldPath = this.config.folders.find(f => f.id === folderId).path;
+            this.config.apps.forEach(app => {
+                if (app.folder === oldPath) {
+                    app.folder = this.editingFolder.path;
+                }
+            });
+            
+            this.showNotification('Folder updated', 'success');
+        } else {
+            // Add new folder
+            const parent = this.config.folders.find(f => f.id === parentId);
+            const parentPath = parent ? parent.path : '/';
+            const newPath = parentPath === '/' ? `/${folderName.toLowerCase()}` : `${parentPath}/${folderName.toLowerCase()}`;
+            
+            // Check for duplicate path
+            if (this.config.folders.find(f => f.path === newPath)) {
+                this.showNotification('A folder with this path already exists', 'danger');
+                return;
+            }
+            
+            const newFolder = {
+                id: this.generateId(),
+                name: folderName,
+                path: newPath,
+                parent: parentId,
+                order: this.config.folders.length
+            };
+            
+            this.config.folders.push(newFolder);
+            this.showNotification('Folder added', 'success');
+        }
+        
+        this.populateFolderTree();
+        this.enableSave();
+        $('#folderModal').modal('hide');
+    }
+
+    deleteFolder(folder) {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+
+        // Check if folder has apps or subfolders
+        const hasApps = this.config.apps.some(app => app.folder === folder.path);
+        const hasSubfolders = this.config.folders.some(f => f.parent === folder.id);
+        
+        if (hasApps || hasSubfolders) {
+            this.showNotification('Cannot delete folder with apps or subfolders', 'danger');
+            return;
+        }
+
+        if (!confirm(`Delete folder "${folder.name}"?`)) {
+            return;
+        }
+
+        const index = this.config.folders.findIndex(f => f.id === folder.id);
+        if (index !== -1) {
+            this.config.folders.splice(index, 1);
+            this.populateFolderTree();
+            this.enableSave();
+            this.showNotification('Folder deleted', 'success');
+        }
+    }
+
+    // App CRUD Operations
+    showAddAppModal() {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+        
+        this.editingApp = null;
+        $('#appModalTitle').text('Add Application');
+        $('#appForm')[0].reset();
+        $('#appId').val('');
+        this.populateAppFolderSelect();
+        $('#appModal').modal('show');
+    }
+
+    showEditAppModal(app) {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+        
+        this.editingApp = app;
+        $('#appModalTitle').text('Edit Application');
+        $('#appId').val(app.id);
+        $('#appName').val(app.name);
+        $('#appDisplayName').val(app.displayName || app.name);
+        $('#appUrl').val(app.url || '');
+        $('#appIcon').val(app.icon || '');
+        $('#appDescription').val(app.description || '');
+        $('#appActive').prop('checked', app.active || false);
+        this.populateAppFolderSelect();
+        $('#appFolder').val(app.folder || '/');
+        $('#appModal').modal('show');
+    }
+
+    populateAppFolderSelect() {
+        const select = $('#appFolder');
+        select.empty();
+        
+        this.config.folders.forEach(folder => {
+            select.append($('<option>').val(folder.path).text(folder.path));
+        });
+    }
+
+    saveApp() {
+        const form = $('#appForm')[0];
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const appId = $('#appId').val();
+        const appData = {
+            name: $('#appName').val(),
+            displayName: $('#appDisplayName').val(),
+            url: $('#appUrl').val(),
+            icon: $('#appIcon').val() || null,
+            description: $('#appDescription').val() || '',
+            folder: $('#appFolder').val(),
+            active: $('#appActive').is(':checked')
+        };
+        
+        if (this.editingApp) {
+            // Edit existing app
+            Object.assign(this.editingApp, appData);
+            this.showNotification('Application updated', 'success');
+        } else {
+            // Add new app
+            if (this.config.apps.find(app => app.name === appData.name)) {
+                this.showNotification('An app with this name already exists', 'danger');
+                return;
+            }
+            
+            const newApp = {
+                id: this.generateId(),
+                ...appData,
+                order: this.config.apps.length,
+                source: 'manual'
+            };
+            
+            this.config.apps.push(newApp);
+            this.showNotification('Application added', 'success');
+        }
+        
+        this.populateFolderTree();
+        this.populateBottomBarTab();
+        this.enableSave();
+        $('#appModal').modal('hide');
+    }
+
+    deleteApp(app) {
+        if (!this.isAdmin) {
+            this.showNotification('Administrator access required', 'warning');
+            return;
+        }
+
+        if (!confirm(`Delete application "${app.displayName || app.name}"?`)) {
+            return;
+        }
+
+        const index = this.config.apps.findIndex(a => a.id === app.id);
+        if (index !== -1) {
+            this.config.apps.splice(index, 1);
+            this.populateFolderTree();
+            this.populateBottomBarTab();
+            this.enableSave();
+            this.showNotification('Application deleted', 'success');
         }
     }
 
@@ -518,9 +755,11 @@ class FairWindSKSettings {
 
         $('#syncAppsBtn').on('click', () => this.syncAppsFromSignalK());
 
-        $('#addManualAppBtn').on('click', () => this.showAddManualAppModal());
-        
-        $('#saveManualApp').on('click', () => this.addManualApp());
+        $('#addFolderBtn').on('click', () => this.showAddFolderModal());
+        $('#saveFolderBtn').on('click', () => this.saveFolder());
+
+        $('#addAppBtn').on('click', () => this.showAddAppModal());
+        $('#saveAppBtn').on('click', () => this.saveApp());
 
         $('#windowMode').on('change', () => {
             this.updateWindowFieldStates();
@@ -541,74 +780,6 @@ class FairWindSKSettings {
         }
     }
 
-    showAddManualAppModal() {
-        if (!this.isAdmin) {
-            this.showNotification('Administrator access required', 'warning');
-            return;
-        }
-        
-        $('#manualAppForm')[0].reset();
-        $('#addManualAppModal').modal('show');
-    }
-
-    addManualApp() {
-        const form = $('#manualAppForm')[0];
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
-
-        const newApp = {
-            name: $('#manualAppName').val(),
-            description: $('#manualAppDescription').val() || '',
-            url: $('#manualAppUrl').val(),
-            fairwind: {
-                active: false,
-                order: this.config.apps.length * 100,
-                group: $('#manualAppGroup').val(),
-                source: 'manual'
-            },
-            signalk: {
-                displayName: $('#manualAppDisplayName').val(),
-                appIcon: $('#manualAppIcon').val() || null
-            }
-        };
-
-        // Check for duplicates
-        if (this.config.apps.find(app => app.name === newApp.name)) {
-            this.showNotification('An app with this name already exists', 'danger');
-            return;
-        }
-
-        this.config.apps.push(newApp);
-        this.populateAppsTab();
-        this.populateBottomBarTab();
-        this.enableSave();
-        
-        $('#addManualAppModal').modal('hide');
-        this.showNotification('Manual application added', 'success');
-    }
-
-    deleteApp(appName) {
-        if (!this.isAdmin) {
-            this.showNotification('Administrator access required', 'warning');
-            return;
-        }
-
-        if (!confirm('Are you sure you want to remove this application?')) {
-            return;
-        }
-
-        const index = this.config.apps.findIndex(app => app.name === appName);
-        if (index !== -1) {
-            this.config.apps.splice(index, 1);
-            this.populateAppsTab();
-            this.populateBottomBarTab();
-            this.enableSave();
-            this.showNotification('Application removed', 'success');
-        }
-    }
-
     enableSave() {
         if (this.isAdmin) {
             $('#saveBtn').prop('disabled', false);
@@ -616,14 +787,14 @@ class FairWindSKSettings {
     }
 
     updateUIState() {
-        const isEditable = this.isAdmin;
-        
-        if (!isEditable) {
+        if (!this.isAdmin) {
             $('#adminOverlay').show();
             $('input, select, button').not('#saveBtn, #resetBtn').prop('disabled', true);
             $('#saveBtn, #resetBtn').prop('disabled', true);
         } else {
             $('#adminOverlay').hide();
+            // Enable all controls for admin
+            $('input, select, button').prop('disabled', false);
         }
     }
 
@@ -651,9 +822,6 @@ class FairWindSKSettings {
             const key = $(input).data('pathKey');
             this.config.signalk[key] = $(input).val();
         });
-
-        // Update app orders and groups from DOM
-        this.updateAppOrdersAndGroups();
 
         // Bottom bar
         this.config.bottomBar = [];

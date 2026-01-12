@@ -6,7 +6,7 @@ module.exports = function (app) {
   const plugin = {
     id: 'signalk-fairwindsk-settings',
     name: 'FairWindSK Settings',
-    description: 'Settings management plugin and webapp for FairWindSK'
+    description: 'Settings management plugin and webapp for FairWindSK with folder-based app organization'
   };
 
   let configFilePath;
@@ -15,14 +15,10 @@ module.exports = function (app) {
   plugin.start = function (options) {
     app.debug('Plugin starting...');
     
-    // Determine config file path
     const configDir = app.config?.configPath || path.join(process.cwd(), '.signalk');
     configFilePath = path.join(configDir, 'fairwindsk.json');
     
-    // Initialize default config if not exists
     initializeConfig();
-    
-    // Set up REST API routes
     setupRoutes();
     
     app.debug('Plugin started successfully');
@@ -47,13 +43,54 @@ module.exports = function (app) {
     try {
       const data = await fs.readFile(configFilePath, 'utf8');
       currentConfig = JSON.parse(data);
+      
+      // Ensure folders structure exists
+      if (!currentConfig.folders) {
+        currentConfig.folders = getDefaultFolders();
+      }
+      if (!currentConfig.apps) {
+        currentConfig.apps = [];
+      }
+      
       app.debug('Loaded existing configuration');
     } catch (err) {
-      // Create default configuration
       currentConfig = getDefaultConfig();
       await saveConfig(currentConfig);
       app.debug('Created default configuration');
     }
+  }
+
+  function getDefaultFolders() {
+    return [
+      {
+        id: 'root',
+        name: 'Root',
+        path: '/',
+        parent: null,
+        order: 0
+      },
+      {
+        id: 'navigation',
+        name: 'Navigation',
+        path: '/navigation',
+        parent: 'root',
+        order: 1
+      },
+      {
+        id: 'instruments',
+        name: 'Instruments',
+        path: '/instruments',
+        parent: 'root',
+        order: 2
+      },
+      {
+        id: 'utilities',
+        name: 'Utilities',
+        path: '/utilities',
+        parent: 'root',
+        order: 3
+      }
+    ];
   }
 
   function getDefaultConfig() {
@@ -67,33 +104,8 @@ module.exports = function (app) {
         windowTop: 20,
         windowLeft: 0
       },
+      folders: getDefaultFolders(),
       apps: [],
-      appGroups: [
-        {
-          id: 'navigation',
-          name: 'Navigation',
-          order: 1,
-          apps: []
-        },
-        {
-          id: 'instruments',
-          name: 'Instruments',
-          order: 2,
-          apps: []
-        },
-        {
-          id: 'utilities',
-          name: 'Utilities',
-          order: 3,
-          apps: []
-        },
-        {
-          id: 'other',
-          name: 'Other',
-          order: 999,
-          apps: []
-        }
-      ],
       signalk: {
         btw: 'navigation.course.calcValues.bearingTrue',
         cog: 'navigation.courseOverGroundTrue',
@@ -212,7 +224,6 @@ module.exports = function (app) {
           await initializeConfig();
         }
         
-        // Deep merge
         currentConfig = deepMerge(currentConfig, req.body);
         const success = await saveConfig(currentConfig);
         
