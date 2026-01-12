@@ -11,6 +11,13 @@ class FairWindSKSettings {
         this.editingFolder = null;
         this.editingApp = null;
         
+        // Check for dev bypass in URL (for development/testing)
+        const urlParams = new URLSearchParams(window.location.search);
+        this.devMode = urlParams.get('dev') === 'true';
+        if (this.devMode) {
+            console.warn('DEVELOPMENT MODE ENABLED - Auth bypass active');
+        }
+        
         this.init();
     }
 
@@ -25,6 +32,16 @@ class FairWindSKSettings {
 
     // Check user level - FIXED to properly detect admin
     async checkUserLevel() {
+        // Development mode bypass
+        if (this.devMode) {
+            console.warn('DEV MODE: Bypassing auth check, assuming admin');
+            this.userLevel = 'admin';
+            this.isAdmin = true;
+            $('#userName').text('Developer');
+            $('#userLevel').text('DEV MODE').addClass('badge-warning');
+            return;
+        }
+        
         try {
             const response = await fetch('/signalk/v1/auth/validate', {
                 credentials: 'include'
@@ -32,31 +49,49 @@ class FairWindSKSettings {
             
             if (response.ok) {
                 const data = await response.json();
-                console.log('Auth response:', data); // Debug log
+                console.log('Auth validation response:', data); // Debug log
                 
-                // Check both userLevel field and status
-                this.userLevel = data.userLevel || data.status || 'guest';
-                this.isAdmin = this.userLevel === 'admin' || this.userLevel === 'ADMIN';
+                // Signal K returns different formats depending on auth state
+                // When logged in as admin: { status: "COMPLETED", userLevel: "admin", username: "admin" }
+                // When not logged in: { status: "NOTLOGGEDIN" } or 401
                 
-                $('#userName').text(data.username || 'Guest');
+                // Check multiple possible fields
+                const status = data.status || '';
+                const userLevel = data.userLevel || '';
+                const username = data.username || data.id || '';
+                
+                // Determine if user is admin
+                this.isAdmin = (
+                    userLevel.toLowerCase() === 'admin' || 
+                    status.toLowerCase() === 'admin' ||
+                    username.toLowerCase() === 'admin'
+                );
+                
+                this.userLevel = userLevel || status || 'guest';
+                
+                $('#userName').text(username || 'Guest');
                 $('#userLevel').text(this.userLevel.toUpperCase())
                     .removeClass('badge-secondary badge-success')
                     .addClass(this.isAdmin ? 'badge-success' : 'badge-secondary');
                     
-                console.log('User is admin:', this.isAdmin); // Debug log
+                console.log('User level:', this.userLevel);
+                console.log('Is admin:', this.isAdmin);
+                console.log('Username:', username);
             } else {
+                console.log('Auth validation failed, response not OK');
+                // Not logged in or auth failed
                 this.userLevel = 'guest';
                 this.isAdmin = false;
                 $('#userName').text('Guest');
                 $('#userLevel').text('GUEST').addClass('badge-secondary');
             }
         } catch (error) {
-            console.error('Error checking user level:', error);
-            // Assume admin if auth check fails (for development)
-            this.userLevel = 'admin';
-            this.isAdmin = true;
-            $('#userName').text('Admin');
-            $('#userLevel').text('ADMIN').addClass('badge-success');
+            console.error('Auth check failed:', error);
+            // On error, check if we're in development mode or assume not logged in
+            this.userLevel = 'guest';
+            this.isAdmin = false;
+            $('#userName').text('Guest');
+            $('#userLevel').text('GUEST').addClass('badge-secondary');
         }
     }
 
@@ -787,14 +822,23 @@ class FairWindSKSettings {
     }
 
     updateUIState() {
+        console.log('Updating UI state. Is admin:', this.isAdmin);
+        
         if (!this.isAdmin) {
+            console.log('Showing admin overlay - user is not admin');
             $('#adminOverlay').show();
-            $('input, select, button').not('#saveBtn, #resetBtn').prop('disabled', true);
+            $('#overlayAuthStatus').text(`Level: ${this.userLevel}, Admin: ${this.isAdmin}`);
+            // Disable form controls but keep buttons visible
+            $('input:not(#saveBtn):not(#resetBtn), select, textarea').prop('disabled', true);
+            $('.btn:not(#saveBtn):not(#resetBtn)').prop('disabled', true);
             $('#saveBtn, #resetBtn').prop('disabled', true);
         } else {
+            console.log('Hiding admin overlay - user is admin');
             $('#adminOverlay').hide();
             // Enable all controls for admin
-            $('input, select, button').prop('disabled', false);
+            $('input, select, textarea, button').prop('disabled', false);
+            // Save button starts disabled until changes made
+            $('#saveBtn').prop('disabled', true);
         }
     }
 

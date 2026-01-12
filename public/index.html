@@ -429,10 +429,24 @@
 
     <!-- Admin Check Overlay -->
     <div id="adminOverlay" class="admin-overlay" style="display: none;">
-        <div class="alert alert-warning text-center">
+        <div class="alert alert-warning text-center" style="max-width: 600px;">
             <i class="fas fa-lock fa-3x mb-3"></i>
             <h4>Administrator Access Required</h4>
             <p>You must be logged in as an administrator to modify settings.</p>
+            <hr>
+            <div class="text-left small">
+                <p><strong>Troubleshooting:</strong></p>
+                <ul>
+                    <li>Ensure you're logged in to Signal K with admin credentials</li>
+                    <li>Check browser console (F12) for auth details</li>
+                    <li>Try logging out and back in</li>
+                    <li>For development: Add <code>?dev=true</code> to URL</li>
+                </ul>
+                <p class="mb-0"><strong>Auth Status:</strong> <span id="overlayAuthStatus">Checking...</span></p>
+            </div>
+            <button class="btn btn-secondary mt-3" onclick="$('#adminOverlay').hide()">
+                Dismiss Overlay (Read-Only Mode)
+            </button>
         </div>
     </div>
 

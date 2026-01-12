@@ -2,7 +2,7 @@
 
 A Signal K plugin and web application for managing FairWindSK navigation system settings with **folder-based app organization**, **full CRUD operations**, and **icon display**.
 
-![FairWind Logo](../../Downloads/files-3/signalk-fairwindsk-settings/public/icon.png)
+![FairWind Logo](public/icon.png)
 
 ## 🆕 What's New in v3.0
 
@@ -310,6 +310,60 @@ PUT /plugins/fairwindsk-settings/config
 ```
 
 ## Troubleshooting
+
+### Admin Access Issues
+
+If you're seeing "Administrator Access Required" even when logged in as admin:
+
+#### Step 1: Check Browser Console
+1. Press **F12** to open browser console
+2. Look for these log messages:
+```
+Auth validation response: {...}
+User level: admin
+Is admin: true
+Username: admin
+```
+
+#### Step 2: Verify Auth Response
+The console should show the response from `/signalk/v1/auth/validate`:
+```json
+{
+  "status": "COMPLETED",
+  "userLevel": "admin",
+  "username": "admin"
+}
+```
+
+If you see different values, the plugin will show the overlay.
+
+#### Step 3: Development Mode Bypass
+For testing/development, add `?dev=true` to the URL:
+```
+http://localhost:3000/plugins/fairwindsk-settings/?dev=true
+```
+
+This bypasses authentication and assumes admin privileges.
+
+#### Step 4: Common Issues
+
+**Issue**: Console shows `{ status: "NOTLOGGEDIN" }`
+**Solution**: You're not logged in. Go to Signal K login page.
+
+**Issue**: Console shows `userLevel: "readonly"`
+**Solution**: Your account doesn't have admin privileges. Log in as admin.
+
+**Issue**: Auth check fails with CORS error
+**Solution**: Ensure you're accessing from the same domain as Signal K.
+
+**Issue**: Console shows correct auth but overlay still appears
+**Solution**: 
+1. Hard refresh (Ctrl+Shift+R)
+2. Clear browser cache
+3. Try in incognito mode
+
+#### Step 5: Manual Override
+Click "Dismiss Overlay (Read-Only Mode)" button to hide overlay and view settings in read-only mode.
 
 ### Can't Edit Settings (Admin Issue)
 **Symptom**: Logged in as admin but controls disabled
